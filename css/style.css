@@ -1,0 +1,59 @@
+/* 画面全体の設定 */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+    font-family: sans-serif;
+    text-align: center;
+}
+
+/* 地図を中央に配置するエリア */
+#map-container {
+    position: relative;
+    width: 100%;
+    max-width: 900px;   /* iPadで見やすいサイズ */
+    margin: 0 auto;
+}
+
+/* 地図画像 */
+#map {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* ハイライト画像（地図の上に重ねる） */
+#highlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    pointer-events: none;   /* クリックを地図に通す */
+}
+
+/* 非表示用クラス */
+.hidden {
+    display: none;
+}
+
+/* ボタンエリア */
+#buttons {
+    margin-top: 20px;
+}
+
+/* ボタンの見た目 */
+#buttons button {
+    padding: 10px 15px;
+    margin: 5px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #888;
+    background-color: #f0f0f0;
+    cursor: pointer;
+}
+
+/* ボタンを押したときの反応 */
+#buttons button:active {
+    background-color: #d0d0d0;
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>図書館案内アプリ</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <div id="map-container">
+        <img id="map" src="map_1F.png" alt="地図">
+        <img id="highlight" src="" alt="ハイライト" class="hidden">
+    </div>
+
+    <div id="buttons">
+        <button onclick="highlight('PC.png')">パソコン</button>
+        <button onclick="highlight('YA.png')">ライトノベル</button>
+        <button onclick="highlight('enngei.png')">園芸</button>
+        <button onclick="highlight('kazi.png')">家事育児</button>
+        <button onclick="highlight('kennkou.png')">健康医療</button>
+        <button onclick="highlight('zassi.png')">雑誌</button>
+        <button onclick="highlight('sizenn.png')">自然科学</button>
+        <button onclick="highlight('syakai.png')">社会</button>
+        <button onclick="highlight('syuukyou.png')">宗教</button>
+        <button onclick="highlight('zinnsei.png')">人生訓</button>
+        <button onclick="highlight('bunngaku.png')">文学</button>
+        <button onclick="highlight('bunnko.png')">文庫本</button>
+        <button onclick="highlight('ryokou.png')">旅行</button>
+        <button onclick="highlight('ryouri.png')">料理</button>
+        <button onclick="highlight('rekisi.png')">歴史</button>
+    </div>
+
+    <script src="js/app.js"></script>
+
+</body>
+</html>
