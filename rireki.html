@@ -14,7 +14,6 @@
       border: 1px solid #666;
       background-color: #f0f0f0;
     }
-
     .tab-button:hover {
       background-color: #e0e0e0;
     }
@@ -22,14 +21,6 @@
 </head>
 
 <body>
-
-  <!-- 戻るボタン（ページ上部） -->
-  <div style="text-align:left; margin:10px;">
-    <button onclick="location.href='index.html'"
-            style="padding:10px 20px; font-size:16px;">
-      ← 戻る
-    </button>
-  </div>
 
 <h2>読書ノート</h2>
 　読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
@@ -39,11 +30,12 @@
 <!-- 上段：読み取りボタン or カメラ -->
 <div id="top-area" style="margin:20px; text-align:center;">
   <button id="start-btn" style="padding:10px 20px; font-size:18px;">
-    読み取りを開始
+    バーコード読み込み
   </button>
 </div>
 
 <h3>タイトル別</h3>
+
 <!-- タブ分類 -->
 <div id="tabs" style="margin:20px; text-align:center;">
   <button class="tab-button" onclick="renderBookList(currentSort,'ア行')">あ行</button>
@@ -59,20 +51,12 @@
   <button class="tab-button" onclick="renderBookList(currentSort,'その他')">その他</button>
 </div>
 
-<!-- 並び替えボタン -->
-<!-- 並び替えボタンは、とりあえずやめておく
-<div style="margin:10px; text-align:center;">
-  <button onclick="renderBookList('title')">タイトル順で表示</button>
-  <button onclick="renderBookList('author')">作者順で表示</button>
-</div>
--->
-
 <!-- 中段：読み取り終了ボタン -->
 <div id="middle-area" style="margin:20px; text-align:center;"></div>
 
 <!-- 下段：読み込んだ本一覧 -->
 <div id="bottom-area" style="margin:20px;">
-<h3>読んだ本一覧</h3>
+  <h3>読んだ本一覧</h3>
   <div id="book-list"></div>
 </div>
 
@@ -98,27 +82,10 @@ function normalizeYomi(str) {
     if (!str) return "";
     let t = str;
 
-    // 全角カタカナ → ひらがな
     t = kataToHira(t);
-
-    // 半角カナ → 全角 → ひらがな
-    t = t.replace(/[\uFF65-\uFF9F]/g, s => {
-        return kataToHira(s.normalize("NFKC"));
-    });
-
-    // 英字 → カタカナ → ひらがな
-    t = t.replace(/[A-Za-z]/g, s => {
-        const kana = String.fromCharCode(s.toUpperCase().charCodeAt(0) + 0x60);
-        return kataToHira(kana);
-    });
-
-    // 数字 → よみ
-    t = t.replace(/[0-9]/g, s => {
-        const map = ["ぜろ","いち","に","さん","よん","ご","ろく","なな","はち","きゅう"];
-        return map[parseInt(s)];
-    });
-
-    // 記号・スペース類を削る
+    t = t.replace(/[\uFF65-\uFF9F]/g, s => kataToHira(s.normalize("NFKC")));
+    t = t.replace(/[A-Za-z]/g, s => kataToHira(String.fromCharCode(s.toUpperCase().charCodeAt(0) + 0x60)));
+    t = t.replace(/[0-9]/g, s => ["ぜろ","いち","に","さん","よん","ご","ろく","なな","はち","きゅう"][parseInt(s)]);
     t = t.replace(/[・。、「」『』（）()\s]/g, "");
 
     return t;
@@ -132,7 +99,7 @@ function fallbackYomi(title) {
 }
 
 /* -----------------------------------
-   OpenBD API（タイトル・著者・ヨミ）
+   OpenBD API
 ----------------------------------- */
 async function fetchBookInfo(isbn) {
     const url = `https://api.openbd.jp/v1/get?isbn=${isbn}`;
@@ -152,11 +119,8 @@ async function fetchBookInfo(isbn) {
         yomi = "";
     }
 
-    if (!yomi) {
-        yomi = fallbackYomi(title);
-    } else {
-        yomi = normalizeYomi(yomi);
-    }
+    if (!yomi) yomi = fallbackYomi(title);
+    else yomi = normalizeYomi(yomi);
 
     return { isbn, title, author, yomi };
 }
@@ -172,7 +136,9 @@ function saveBook(info) {
     const books = getBooks();
     books.push(info);
     localStorage.setItem("books", JSON.stringify(books));
-    renderBookList(currentSort);
+
+    // ★ 読み取り後に「あ行」を自動表示
+    renderBookList("title","ア行");
 }
 
 function updateBook(index, info) {
@@ -190,11 +156,10 @@ function deleteBook(index) {
 }
 
 /* -----------------------------------
-   重複チェック（ISBNで判定）
+   重複チェック（ISBN）
 ----------------------------------- */
 function isDuplicate(info) {
-    const books = getBooks();
-    return books.some(book => book.isbn === info.isbn);
+    return getBooks().some(book => book.isbn === info.isbn);
 }
 
 /* -----------------------------------
@@ -218,8 +183,7 @@ function normalizeFirstKana(ch) {
 ----------------------------------- */
 function getGroupFromYomi(yomi) {
     if (!yomi) return "その他";
-    const firstRaw = yomi.charAt(0);
-    const first = normalizeFirstKana(firstRaw);
+    const first = normalizeFirstKana(yomi.charAt(0));
 
     if ("あいうえお".includes(first)) return "ア行";
     if ("かきくけこ".includes(first)) return "カ行";
@@ -272,15 +236,12 @@ function renderBookList(sortType = "title", group = null) {
 
     books.sort((a, b) => a[sortType].localeCompare(b[sortType]));
 
-    if (group) {
-        books = books.filter(book => getGroupFromYomi(book.yomi) === group);
-    }
+    if (group) books = books.filter(book => getGroupFromYomi(book.yomi) === group);
 
     const list = document.getElementById("book-list");
     list.innerHTML = "";
 
     books.forEach((book) => {
-        // ★ 表示中の本が、元の配列のどの index かを ISBN で特定
         const originalIndex = allBooks.findIndex(b => b.isbn === book.isbn);
 
         const div = document.createElement("div");
@@ -313,6 +274,9 @@ function showInitial() {
   document.getElementById("middle-area").innerHTML = "";
 
   document.getElementById("start-btn").onclick = showCamera;
+
+  // ★ ページ読み込み時に「あ行」を自動表示
+  renderBookList("title","ア行");
 }
 
 /* -----------------------------------
@@ -355,10 +319,8 @@ function showCamera() {
       const now = Date.now();
       const code = data.codeResult.code;
 
-      // 同じコードの連続検出を抑制
-      if (code === lastCode && now - lastScanTime < 3000) {
-          return;
-      }
+      if (code === lastCode && now - lastScanTime < 3000) return;
+
       lastCode = code;
       lastScanTime = now;
 
@@ -366,18 +328,13 @@ function showCamera() {
       isProcessing = true;
 
       const isbn = code;
-      console.log("ISBN候補:", isbn);
 
-      // ISBNフィルタ（978/979のみ採用）
       if (!isbn.startsWith("978") && !isbn.startsWith("979")) {
-          console.log("ISBNではない:", isbn);
           isProcessing = false;
           return;
       }
 
-      // 誤読チェック（13桁の数字）
       if (!isbn || isbn.length !== 13 || !/^\d{13}$/.test(isbn)) {
-          console.log("誤読:", isbn);
           isProcessing = false;
           return;
       }
@@ -390,7 +347,6 @@ function showCamera() {
           return;
       }
 
-      // 重複チェック（ISBNで判定・アラートは1回だけ）
       if (isDuplicate(info)) {
           if (!duplicateAlertShown) {
               alert("この本はすでに登録されています");
@@ -406,9 +362,9 @@ function showCamera() {
           `タイトル：${info.title}\n著者：${info.author}\n\n取り込みますか？`
       );
 
-      if (ok) {
-          saveBook(info);
-      }
+      if (ok) saveBook(info);
+
+      duplicateAlertShown = false; // ★ 連続読み取り対策
 
       Quagga.stop();
       showInitial();
@@ -418,14 +374,12 @@ function showCamera() {
 }
 
 /* -----------------------------------
-   カメラ停止（固まり防止）
+   カメラ停止
 ----------------------------------- */
 function stopCamera() {
   Quagga.stop();
-
   const cam = document.querySelector('#camera');
   if (cam) cam.innerHTML = "";
-
   showInitial();
 }
 
@@ -433,7 +387,6 @@ function stopCamera() {
    初期表示
 ----------------------------------- */
 showInitial();
-renderBookList();
 
 </script>
 
