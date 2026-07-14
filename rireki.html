@@ -23,7 +23,7 @@
 
 <body>
 
-<h2>履歴</h2>
+<h2>読書ノート</h2>
 　読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 　読み込んだデータは、本のタイトルごとに表示することができます。<br>
 　稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
@@ -52,17 +52,19 @@
 </div>
 
 <!-- 並び替えボタン -->
+<!-- 並び替えボタンは、とりあえずやめておく
 <div style="margin:10px; text-align:center;">
   <button onclick="renderBookList('title')">タイトル順で表示</button>
   <button onclick="renderBookList('author')">作者順で表示</button>
 </div>
+-->
 
 <!-- 中段：読み取り終了ボタン -->
 <div id="middle-area" style="margin:20px; text-align:center;"></div>
 
 <!-- 下段：読み込んだ本一覧 -->
 <div id="bottom-area" style="margin:20px;">
-  <h3>読み込んだ本一覧</h3>
+<h3>読んだ本一覧</h3>
   <div id="book-list"></div>
 </div>
 
