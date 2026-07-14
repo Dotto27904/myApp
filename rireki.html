@@ -8,7 +8,7 @@
 
 <body>
 
-<h2>読み取り履歴2</h2>
+<h2>読み取り履歴3</h2>
 
 <!-- 並び替えボタン -->
 <div style="margin:10px; text-align:center;">
@@ -62,14 +62,20 @@ function kataToHira(str) {
 }
 
 /* -----------------------------------
-   fallback：タイトルから読みを生成
+   fallback：タイトルから読みを生成（強化版）
 ----------------------------------- */
 function fallbackYomi(title) {
     let t = title;
 
-    // アルファベット → カタカナ化（簡易）
+    // 英字 → カタカナ
     t = t.replace(/[A-Za-z]/g, s => {
         return String.fromCharCode(s.toUpperCase().charCodeAt(0) + 0x60);
+    });
+
+    // 数字 → よみ
+    t = t.replace(/[0-9]/g, s => {
+        const map = ["ぜろ","いち","に","さん","よん","ご","ろく","なな","はち","きゅう"];
+        return map[parseInt(s)];
     });
 
     // カタカナ → ひらがな
@@ -226,7 +232,7 @@ function showCamera() {
           target: document.querySelector('#camera'),
           constraints: { facingMode: "environment" }
       },
-      decoder: { readers: ["ean_reader"] }
+      decoder: { readers: ["ean_13_reader"] }   <!-- ★高速化 -->
   }, function(err) {
       if (err) { console.log(err); return; }
       Quagga.start();
@@ -253,14 +259,14 @@ function showCamera() {
       const isbn = data.codeResult.code;
       console.log("ISBN:", isbn);
 
-      // ★ ISBNフィルタ（978/979で始まるものだけ採用）
+      // ★ ISBNフィルタ（978/979）
       if (!isbn.startsWith("978") && !isbn.startsWith("979")) {
           console.log("ISBNではないバーコード:", isbn);
           isProcessing = false;
           return;
       }
 
-      // ★ ISBN誤読チェック（13桁の数字）
+      // ★ 13桁チェック
       if (!isbn || isbn.length !== 13 || !/^\d{13}$/.test(isbn)) {
           console.log("誤読:", isbn);
           isProcessing = false;
@@ -275,8 +281,11 @@ function showCamera() {
           return;
       }
 
+      // ★ 重複チェック（固まり防止）
       if (isDuplicate(info)) {
           alert("この本はすでに登録されています");
+          Quagga.stop();     // ★追加
+          showInitial();     // ★追加
           isProcessing = false;
           return;
       }
@@ -302,7 +311,6 @@ function showCamera() {
 function stopCamera() {
   Quagga.stop();
 
-  // ★ カメラ映像を消す（固まり防止）
   const cam = document.querySelector('#camera');
   if (cam) cam.innerHTML = "";
 
