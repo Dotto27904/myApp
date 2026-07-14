@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート11</title>
+  <title>読書ノート12</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -22,7 +22,7 @@
 
 <body>
 
-<h2>読書ノート12</h2>
+<h2>読書ノート13</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 読み込んだデータは、本のタイトルごとに表示することができます。<br>
 稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
@@ -67,9 +67,10 @@ let currentSort = "title";
 let currentGroup = "ア行";
 let duplicateAlertShown = false;
 let cameraStopped = false;
-
-// ★★★ 重要：lastCode をグローバル化 ★★★
 let lastCode = "";
+
+// ★★★ 追加：グローバル isProcessing ★★★
+let isProcessing = false;
 
 /* -----------------------------------
    カタカナ → ひらがな変換
@@ -275,10 +276,10 @@ function showCamera() {
   duplicateAlertShown = false;
   cameraStopped = false;
 
-  // ★★★ 追加：読み取り状態を完全リセット ★★★
+  // ★★★ 読み取り状態を完全リセット ★★★
   isProcessing = false;
 
-  // ★★★ ここで lastCode を必ずリセットする ★★★
+  // ★★★ 前回のコードをリセット ★★★
   lastCode = "";
 
   document.getElementById("top-area").innerHTML = `
@@ -293,7 +294,6 @@ function showCamera() {
 
   document.getElementById("stop-btn").onclick = stopCamera;
 
-  let isProcessing = false;
   let lastScanTime = 0;
 
   Quagga.init({
@@ -316,9 +316,8 @@ function showCamera() {
       const now = Date.now();
       const code = data.codeResult.code;
 
-      // ★★★ ISBN（978/979）以外は絶対に保存しない ★★★
+      // ★★★ ISBN（978/979）以外は捨てる ★★★
       if (!code.startsWith("978") && !code.startsWith("979")) {
-          // JANコード（192〜）はここで捨てる
           return;
       }
 
@@ -337,9 +336,9 @@ function showCamera() {
       if (!info) {
           alert("書誌データがありません（OpenBDに情報がありません）");
 
-          cameraStopped = true;     // ★ 二重発火防止
-          Quagga.stop();            // ★ カメラ停止
-          showInitial();            // ★ 初期画面に戻す
+          cameraStopped = true;
+          Quagga.stop();
+          showInitial();
 
           isProcessing = false;
           return;
