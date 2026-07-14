@@ -97,7 +97,6 @@ async function fetchBookInfo(isbn) {
         yomi = "";
     }
 
-    // 読みが無い場合はタイトルから生成
     if (!yomi) {
         yomi = fallbackYomi(title);
     }
@@ -159,7 +158,7 @@ function getGroupFromYomi(yomi) {
 }
 
 /* -----------------------------------
-   一覧表示（並び替え＋タブ分類）
+   一覧表示
 ----------------------------------- */
 function renderBookList(sortType = "title", group = null) {
     let books = getBooks();
@@ -234,14 +233,19 @@ function showCamera() {
   });
 
   /* -----------------------------------
-     読み取り処理（誤読チェック＋1秒ロック）
+     読み取り処理（強力ロック＋誤読チェック＋1秒ロック）
   ----------------------------------- */
   let lastScanTime = 0;
+  let isProcessing = false;
 
   Quagga.onDetected(async function(data) {
 
+      if (isProcessing) return;     // ★ 強力ロック
+      isProcessing = true;
+
       const now = Date.now();
       if (now - lastScanTime < 1000) {
+          isProcessing = false;
           return;   // ★ 1秒以内の連続検出を無視
       }
       lastScanTime = now;
@@ -249,23 +253,26 @@ function showCamera() {
       const isbn = data.codeResult.code;
       console.log("ISBN:", isbn);
 
-      // ★ ISBN誤読チェック（重要）
+      // ★ ISBN誤読チェック
       if (!isbn || isbn.length !== 13 || !/^\d{13}$/.test(isbn)) {
           console.log("誤読:", isbn);
-          return;   // カメラは続行
+          isProcessing = false;
+          return;
       }
 
       const info = await fetchBookInfo(isbn);
 
-      // ★ 書誌データが無い場合はカメラを止めない
+      // ★ 書誌データなし
       if (!info) {
           alert("書誌データがありません（OpenBDに情報がありません）");
+          isProcessing = false;
           return;
       }
 
       // ★ 重複チェック
       if (isDuplicate(info)) {
           alert("この本はすでに登録されています");
+          isProcessing = false;
           return;
       }
 
@@ -279,6 +286,8 @@ function showCamera() {
 
       Quagga.stop();
       showInitial();
+
+      isProcessing = false;
   });
 }
 
