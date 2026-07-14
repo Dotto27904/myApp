@@ -22,7 +22,7 @@
 
 <body>
 
-<h2>読書ノート3</h2>
+<h2>読書ノート4</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 読み込んだデータは、本のタイトルごとに表示することができます。<br>
 稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
@@ -235,8 +235,8 @@ function editBook(index) {
 function renderBookList(sortType = "title", group = null) {
     currentSort = sortType;
 
-    // ★ group が指定されたら必ず currentGroup を更新
-    if (group !== null) {
+    // ★ 修正：null と undefined の両方を判定
+    if (group !== null && group !== undefined) {
         currentGroup = group;
     }
 
@@ -245,7 +245,6 @@ function renderBookList(sortType = "title", group = null) {
 
     books.sort((a, b) => a[sortType].localeCompare(b[sortType]));
 
-    // ★ currentGroup を使ってフィルタ
     books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
 
     const list = document.getElementById("book-list");
