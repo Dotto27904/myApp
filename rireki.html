@@ -22,7 +22,7 @@
 
 <body>
 
-<h2>読書ノート</h2>
+<h2>読書ノート2</h2>
 　読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 　読み込んだデータは、本のタイトルごとに表示することができます。<br>
 　稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
@@ -64,6 +64,7 @@
 
 <script>
 let currentSort = "title";
+let currentGroup = "ア行";   // 現在表示中の行（フィルタ維持用）
 
 /* -----------------------------------
    カタカナ → ひらがな変換
@@ -137,22 +138,25 @@ function saveBook(info) {
     books.push(info);
     localStorage.setItem("books", JSON.stringify(books));
 
-    // ★ 読み取り後に「あ行」を自動表示
-    renderBookList("title","ア行");
+    // 登録された本のヨミから行を判定して、その行へ遷移
+    const group = getGroupFromYomi(info.yomi);
+    alert("登録完了");
+    renderBookList("title", group);
 }
 
 function updateBook(index, info) {
     const books = getBooks();
     books[index] = info;
     localStorage.setItem("books", JSON.stringify(books));
-    renderBookList(currentSort);
+    renderBookList(currentSort, currentGroup);
 }
 
 function deleteBook(index) {
     const books = getBooks();
     books.splice(index, 1);
     localStorage.setItem("books", JSON.stringify(books));
-    renderBookList(currentSort);
+    // ★ 削除後も現在の行フィルタを維持
+    renderBookList(currentSort, currentGroup);
 }
 
 /* -----------------------------------
@@ -230,13 +234,16 @@ function editBook(index) {
 ----------------------------------- */
 function renderBookList(sortType = "title", group = null) {
     currentSort = sortType;
+    if (group !== null) currentGroup = group;
 
     const allBooks = getBooks();
     let books = [...allBooks];
 
     books.sort((a, b) => a[sortType].localeCompare(b[sortType]));
 
-    if (group) books = books.filter(book => getGroupFromYomi(book.yomi) === group);
+    if (currentGroup) {
+        books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
+    }
 
     const list = document.getElementById("book-list");
     list.innerHTML = "";
@@ -268,15 +275,16 @@ function renderBookList(sortType = "title", group = null) {
 function showInitial() {
   document.getElementById("top-area").innerHTML = `
     <button id="start-btn" style="padding:10px 20px; font-size:18px;">
-      読み取りを開始
+      バーコード読み込み
     </button>
   `;
   document.getElementById("middle-area").innerHTML = "";
 
   document.getElementById("start-btn").onclick = showCamera;
 
-  // ★ ページ読み込み時に「あ行」を自動表示
-  renderBookList("title","ア行");
+  // ページ読み込み時は「あ行」を表示
+  currentGroup = "ア行";
+  renderBookList("title", "ア行");
 }
 
 /* -----------------------------------
@@ -362,9 +370,12 @@ function showCamera() {
           `タイトル：${info.title}\n著者：${info.author}\n\n取り込みますか？`
       );
 
-      if (ok) saveBook(info);
+      if (ok) {
+          saveBook(info);
+      }
 
-      duplicateAlertShown = false; // ★ 連続読み取り対策
+      // 次の読み取りに備えてリセット
+      duplicateAlertShown = false;
 
       Quagga.stop();
       showInitial();
