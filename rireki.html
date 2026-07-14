@@ -4,6 +4,21 @@
   <meta charset="UTF-8">
   <title>読書ノート</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    .tab-button {
+      padding: 12px 20px;
+      margin: 4px;
+      font-size: 18px;
+      border-radius: 8px;
+      border: 1px solid #666;
+      background-color: #f0f0f0;
+    }
+
+    .tab-button:hover {
+      background-color: #e0e0e0;
+    }
+  </style>
 </head>
 
 <body>
@@ -20,19 +35,20 @@
   </button>
 </div>
 
+<h3>タイトル別</h3>
 <!-- タブ分類 -->
 <div id="tabs" style="margin:20px; text-align:center;">
-  <button onclick="renderBookList(currentSort,'ア行')">ア行</button>
-  <button onclick="renderBookList(currentSort,'カ行')">カ行</button>
-  <button onclick="renderBookList(currentSort,'サ行')">サ行</button>
-  <button onclick="renderBookList(currentSort,'タ行')">タ行</button>
-  <button onclick="renderBookList(currentSort,'ナ行')">ナ行</button>
-  <button onclick="renderBookList(currentSort,'ハ行')">ハ行</button>
-  <button onclick="renderBookList(currentSort,'マ行')">マ行</button>
-  <button onclick="renderBookList(currentSort,'ヤ行')">ヤ行</button>
-  <button onclick="renderBookList(currentSort,'ラ行')">ラ行</button>
-  <button onclick="renderBookList(currentSort,'ワ行')">ワ行</button>
-  <button onclick="renderBookList(currentSort,'その他')">その他</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'ア行')">あ行</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'カ行')">か行</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'サ行')">さ行</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'タ行')">た行</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'ナ行')">な行</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'ハ行')">は行</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'マ行')">ま行</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'ヤ行')">や行</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'ラ行')">ら行</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'ワ行')">わ行</button>
+  <button class="tab-button" onclick="renderBookList(currentSort,'その他')">その他</button>
 </div>
 
 <!-- 並び替えボタン -->
