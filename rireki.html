@@ -8,7 +8,7 @@
 
 <body>
 
-<h2>読み取り履歴3</h2>
+<h2>読み取り履歴4</h2>
 
 <!-- 並び替えボタン -->
 <div style="margin:10px; text-align:center;">
@@ -232,7 +232,7 @@ function showCamera() {
           target: document.querySelector('#camera'),
           constraints: { facingMode: "environment" }
       },
-      decoder: { readers: ["ean_13_reader"] }   <!-- ★高速化 -->
+      decoder: { readers: ["ean_reader"] }   <!-- ★EAN-13全部読む（高速） -->
   }, function(err) {
       if (err) { console.log(err); return; }
       Quagga.start();
@@ -257,16 +257,21 @@ function showCamera() {
       lastScanTime = now;
 
       const isbn = data.codeResult.code;
-      console.log("ISBN:", isbn);
+      console.log("ISBN候補:", isbn);
 
-      // ★ ISBNフィルタ（978/979）
+      /* -------------------------------
+         ★ ISBNフィルタ（978/979）
+         → 上段でも下段でもISBNだけ採用
+      ------------------------------- */
       if (!isbn.startsWith("978") && !isbn.startsWith("979")) {
-          console.log("ISBNではないバーコード:", isbn);
+          console.log("ISBNではない:", isbn);
           isProcessing = false;
           return;
       }
 
-      // ★ 13桁チェック
+      /* -------------------------------
+         ★ 誤読チェック（13桁の数字）
+      ------------------------------- */
       if (!isbn || isbn.length !== 13 || !/^\d{13}$/.test(isbn)) {
           console.log("誤読:", isbn);
           isProcessing = false;
@@ -281,11 +286,13 @@ function showCamera() {
           return;
       }
 
-      // ★ 重複チェック（固まり防止）
+      /* -------------------------------
+         ★ 重複チェック（固まり防止）
+      ------------------------------- */
       if (isDuplicate(info)) {
           alert("この本はすでに登録されています");
-          Quagga.stop();     // ★追加
-          showInitial();     // ★追加
+          Quagga.stop();
+          showInitial();
           isProcessing = false;
           return;
       }
