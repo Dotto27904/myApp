@@ -233,7 +233,18 @@ function showCamera() {
       Quagga.start();
   });
 
+  /* -----------------------------------
+     読み取り処理（誤読チェック＋1秒ロック）
+  ----------------------------------- */
+  let lastScanTime = 0;
+
   Quagga.onDetected(async function(data) {
+
+      const now = Date.now();
+      if (now - lastScanTime < 1000) {
+          return;   // ★ 1秒以内の連続検出を無視
+      }
+      lastScanTime = now;
 
       const isbn = data.codeResult.code;
       console.log("ISBN:", isbn);
