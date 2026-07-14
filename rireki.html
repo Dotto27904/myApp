@@ -8,7 +8,7 @@
 
 <body>
 
-<h2>読み取り履歴8</h2>
+<h2>読み取り履歴9</h2>
 
 <!-- 並び替えボタン -->
 <div style="margin:10px; text-align:center;">
@@ -63,10 +63,11 @@ function kataToHira(str) {
 }
 
 /* -----------------------------------
-   fallback：タイトルから読みを生成（強化版）
+   ヨミ用：ひらがなに統一＋記号除去
 ----------------------------------- */
-function fallbackYomi(title) {
-    let t = title;
+function normalizeYomi(str) {
+    if (!str) return "";
+    let t = str;
 
     // 全角カタカナ → ひらがな
     t = kataToHira(t);
@@ -88,7 +89,17 @@ function fallbackYomi(title) {
         return map[parseInt(s)];
     });
 
+    // 記号・スペース類を削る
+    t = t.replace(/[・。、「」『』（）()\s]/g, "");
+
     return t;
+}
+
+/* -----------------------------------
+   fallback：タイトルから読みを生成
+----------------------------------- */
+function fallbackYomi(title) {
+    return normalizeYomi(title);
 }
 
 /* -----------------------------------
@@ -114,12 +125,10 @@ async function fetchBookInfo(isbn) {
 
     if (!yomi) {
         yomi = fallbackYomi(title);
+    } else {
+        yomi = normalizeYomi(yomi);
     }
 
-    // ひらがなで統一
-    yomi = kataToHira(yomi);
-
-    // ★ ISBNも含めて保存用オブジェクトを返す
     return { isbn, title, author, yomi };
 }
 
@@ -160,10 +169,28 @@ function isDuplicate(info) {
 }
 
 /* -----------------------------------
+   濁音・半濁音を行判定用に正規化
+----------------------------------- */
+function normalizeFirstKana(ch) {
+    const map = {
+        "が":"か","ぎ":"き","ぐ":"く","げ":"け","ご":"こ",
+        "ざ":"さ","じ":"し","ず":"す","ぜ":"せ","ぞ":"そ",
+        "だ":"た","ぢ":"ち","づ":"つ","で":"て","ど":"と",
+        "ば":"は","び":"ひ","ぶ":"ふ","べ":"へ","ぼ":"ほ",
+        "ぱ":"は","ぴ":"ひ","ぷ":"ふ","ぺ":"へ","ぽ":"ほ",
+        "ぁ":"あ","ぃ":"い","ぅ":"う","ぇ":"え","ぉ":"お",
+        "ゃ":"や","ゅ":"ゆ","ょ":"よ","っ":"つ"
+    };
+    return map[ch] || ch;
+}
+
+/* -----------------------------------
    読み（ヨミ）から行を判定
 ----------------------------------- */
 function getGroupFromYomi(yomi) {
-    const first = yomi.charAt(0);
+    if (!yomi) return "その他";
+    const firstRaw = yomi.charAt(0);
+    const first = normalizeFirstKana(firstRaw);
 
     if ("あいうえお".includes(first)) return "ア行";
     if ("かきくけこ".includes(first)) return "カ行";
@@ -199,7 +226,7 @@ function editBook(index) {
         isbn: book.isbn,
         title: newTitle,
         author: newAuthor,
-        yomi: kataToHira(newYomi)
+        yomi: normalizeYomi(newYomi)
     };
 
     updateBook(index, updated);
@@ -211,7 +238,8 @@ function editBook(index) {
 function renderBookList(sortType = "title", group = null) {
     currentSort = sortType;
 
-    let books = getBooks();
+    const allBooks = getBooks();
+    let books = [...allBooks];
 
     books.sort((a, b) => a[sortType].localeCompare(b[sortType]));
 
@@ -222,7 +250,10 @@ function renderBookList(sortType = "title", group = null) {
     const list = document.getElementById("book-list");
     list.innerHTML = "";
 
-    books.forEach((book, index) => {
+    books.forEach((book) => {
+        // ★ 表示中の本が、元の配列のどの index かを ISBN で特定
+        const originalIndex = allBooks.findIndex(b => b.isbn === book.isbn);
+
         const div = document.createElement("div");
         div.style.margin = "8px 0";
         div.style.padding = "8px";
@@ -233,8 +264,8 @@ function renderBookList(sortType = "title", group = null) {
             著者：${book.author}<br>
             ヨミ：${book.yomi}<br>
             ISBN：${book.isbn}<br>
-            <button onclick="editBook(${index})">編集</button>
-            <button onclick="deleteBook(${index})">削除</button>
+            <button onclick="editBook(${originalIndex})">編集</button>
+            <button onclick="deleteBook(${originalIndex})">削除</button>
         `;
 
         list.appendChild(div);
