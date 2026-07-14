@@ -319,9 +319,6 @@ function showCamera() {
           return;
       }
 
-      // ★★★ ISBN のみ alert 表示 ★★★
-      alert("読み取ったISBN: " + code);
-
       if (code === lastCode && now - lastScanTime < 3000) return;
 
       lastCode = code;
@@ -336,6 +333,11 @@ function showCamera() {
 
       if (!info) {
           alert("書誌データがありません（OpenBDに情報がありません）");
+
+          cameraStopped = true;     // ★ 二重発火防止
+          Quagga.stop();            // ★ カメラ停止
+          showInitial();            // ★ 初期画面に戻す
+
           isProcessing = false;
           return;
       }
