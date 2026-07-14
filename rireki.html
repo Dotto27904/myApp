@@ -8,7 +8,7 @@
 
 <body>
 
-<h2>読み取り履歴6</h2>
+<h2>読み取り履歴7</h2>
 
 <!-- 並び替えボタン -->
 <div style="margin:10px; text-align:center;">
@@ -116,7 +116,10 @@ async function fetchBookInfo(isbn) {
         yomi = fallbackYomi(title);
     }
 
-    return { title, author, yomi };
+    // ひらがなで統一
+    yomi = kataToHira(yomi);
+
+    return { isbn, title, author, yomi };
 }
 
 /* -----------------------------------
@@ -141,15 +144,11 @@ function deleteBook(index) {
 }
 
 /* -----------------------------------
-   重複チェック（タイトル＋著者＋ヨミ）
+   重複チェック（ISBNで判定）
 ----------------------------------- */
 function isDuplicate(info) {
     const books = getBooks();
-    return books.some(book =>
-        book.title === info.title &&
-        book.author === info.author &&
-        book.yomi === info.yomi
-    );
+    return books.some(book => book.isbn === info.isbn);
 }
 
 /* -----------------------------------
@@ -236,6 +235,11 @@ function showCamera() {
 
   document.getElementById("stop-btn").onclick = stopCamera;
 
+  let isProcessing = false;
+  let lastScanTime = 0;
+  let lastCode = "";
+  let duplicateAlertShown = false;
+
   Quagga.init({
       inputStream: {
           name: "Live",
@@ -243,31 +247,28 @@ function showCamera() {
           target: document.querySelector('#camera'),
           constraints: { facingMode: "environment" }
       },
-      decoder: { readers: ["ean_reader"] }  // EAN-13全部読む
+      decoder: { readers: ["ean_reader"] }
   }, function(err) {
       if (err) { console.log(err); return; }
       Quagga.start();
   });
 
-  /* -----------------------------------
-     読み取り処理（ロック＋ISBNフィルタ＋誤読チェック）
-  ----------------------------------- */
-  let lastScanTime = 0;
-  let isProcessing = false;
-
   Quagga.onDetected(async function(data) {
+
+      const now = Date.now();
+      const code = data.codeResult.code;
+
+      // 同じコードの連続検出を抑制
+      if (code === lastCode && now - lastScanTime < 3000) {
+          return;
+      }
+      lastCode = code;
+      lastScanTime = now;
 
       if (isProcessing) return;
       isProcessing = true;
 
-      const now = Date.now();
-      if (now - lastScanTime < 800) { // 0.8秒以内の連続検出を無視
-          isProcessing = false;
-          return;
-      }
-      lastScanTime = now;
-
-      const isbn = data.codeResult.code;
+      const isbn = code;
       console.log("ISBN候補:", isbn);
 
       // ISBNフィルタ（978/979のみ採用）
@@ -292,9 +293,12 @@ function showCamera() {
           return;
       }
 
-      // 重複チェック（1回だけアラート）
+      // 重複チェック（ISBNで判定・アラートは1回だけ）
       if (isDuplicate(info)) {
-          alert("この本はすでに登録されています");
+          if (!duplicateAlertShown) {
+              alert("この本はすでに登録されています");
+              duplicateAlertShown = true;
+          }
           Quagga.stop();
           showInitial();
           isProcessing = false;
