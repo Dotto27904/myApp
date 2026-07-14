@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート</title>
+  <title>読書ノート8</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -22,7 +22,7 @@
 
 <body>
 
-<h2>読書ノート7</h2>
+<h2>読書ノート8</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 読み込んだデータは、本のタイトルごとに表示することができます。<br>
 稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
@@ -64,8 +64,9 @@
 
 <script>
 let currentSort = "title";
-let currentGroup = "ア行";   // 現在表示中の行（フィルタ維持用）
-let duplicateAlertShown = false; // ★ 重複アラートの状態をグローバル管理
+let currentGroup = "ア行";   // 初期はア行
+let duplicateAlertShown = false;
+let cameraStopped = false;
 
 /* -----------------------------------
    カタカナ → ひらがな変換
@@ -139,12 +140,16 @@ function saveBook(info) {
     books.push(info);
     localStorage.setItem("books", JSON.stringify(books));
 
-    // 登録された本のヨミから行を判定して、その行へ遷移
     const group = getGroupFromYomi(info.yomi);
+    currentGroup = group;   // ★ 行を更新
     alert("登録完了");
-    renderBookList("title", group);
+
+    renderBookList("title", group);  // ★ 行に切り替えた状態で一覧更新
 }
 
+/* -----------------------------------
+   編集・削除
+----------------------------------- */
 function updateBook(index, info) {
     const books = getBooks();
     books[index] = info;
@@ -156,18 +161,18 @@ function deleteBook(index) {
     const books = getBooks();
     books.splice(index, 1);
     localStorage.setItem("books", JSON.stringify(books));
-    renderBookList(currentSort, currentGroup); // ★ フィルタ維持
+    renderBookList(currentSort, currentGroup);
 }
 
 /* -----------------------------------
-   重複チェック（ISBN）
+   重複チェック
 ----------------------------------- */
 function isDuplicate(info) {
     return getBooks().some(book => book.isbn === info.isbn);
 }
 
 /* -----------------------------------
-   濁音・半濁音を行判定用に正規化
+   行判定
 ----------------------------------- */
 function normalizeFirstKana(ch) {
     const map = {
@@ -182,9 +187,6 @@ function normalizeFirstKana(ch) {
     return map[ch] || ch;
 }
 
-/* -----------------------------------
-   読み（ヨミ）から行を判定
------------------------------------ */
 function getGroupFromYomi(yomi) {
     if (!yomi) return "その他";
     const first = normalizeFirstKana(yomi.charAt(0));
@@ -204,38 +206,11 @@ function getGroupFromYomi(yomi) {
 }
 
 /* -----------------------------------
-   編集ダイアログ
------------------------------------ */
-function editBook(index) {
-    const books = getBooks();
-    const book = books[index];
-
-    const newTitle = prompt("タイトルを編集", book.title);
-    if (newTitle === null) return;
-
-    const newAuthor = prompt("著者を編集", book.author);
-    if (newAuthor === null) return;
-
-    const newYomi = prompt("ヨミ（ひらがな）を編集", book.yomi);
-    if (newYomi === null) return;
-
-    const updated = {
-        isbn: book.isbn,
-        title: newTitle,
-        author: newAuthor,
-        yomi: normalizeYomi(newYomi)
-    };
-
-    updateBook(index, updated);
-}
-
-/* -----------------------------------
    一覧表示
 ----------------------------------- */
 function renderBookList(sortType = "title", group = null) {
     currentSort = sortType;
 
-    // ★ 修正：null と undefined の両方を判定
     if (group !== null && group !== undefined) {
         currentGroup = group;
     }
@@ -244,7 +219,6 @@ function renderBookList(sortType = "title", group = null) {
     let books = [...allBooks];
 
     books.sort((a, b) => a[sortType].localeCompare(b[sortType]));
-
     books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
 
     const list = document.getElementById("book-list");
@@ -276,7 +250,7 @@ function renderBookList(sortType = "title", group = null) {
 ----------------------------------- */
 function showInitial() {
 
-  duplicateAlertShown = false;   // ★ 初期状態で必ずリセット
+  duplicateAlertShown = false;
 
   document.getElementById("top-area").innerHTML = `
     <button id="start-btn" style="padding:10px 20px; font-size:18px;">
@@ -287,20 +261,17 @@ function showInitial() {
 
   document.getElementById("start-btn").onclick = showCamera;
 
-  // ページ読み込み時は「あ行」を表示
-  currentGroup = "ア行";
-  renderBookList("title", "ア行");
+  // ★ currentGroup を維持したまま一覧を描画
+  renderBookList(currentSort, currentGroup);
 }
 
 /* -----------------------------------
    読み取り状態
 ----------------------------------- */
-let cameraStopped = false;   // ★ グローバルに追加しておく
-
 function showCamera() {
 
   duplicateAlertShown = false;
-  cameraStopped = false;     // ★ 読み取り開始時にリセット
+  cameraStopped = false;
 
   document.getElementById("top-area").innerHTML = `
     <div id="camera" style="width:100%; max-width:400px; margin:auto;"></div>
@@ -333,7 +304,6 @@ function showCamera() {
 
   Quagga.onDetected(async function(data) {
 
-      // ★ カメラ停止後の二重発火を完全に防ぐ
       if (cameraStopped) return;
 
       const now = Date.now();
@@ -372,7 +342,7 @@ function showCamera() {
               alert("この本はすでに登録されています");
               duplicateAlertShown = true;
           }
-          cameraStopped = true;   // ★ 二重発火防止
+          cameraStopped = true;
           Quagga.stop();
           showInitial();
           isProcessing = false;
@@ -384,16 +354,18 @@ function showCamera() {
       );
 
       if (ok) {
-          saveBook(info);         // ★ 該当行へ移動
-          cameraStopped = true;   // ★ 二重発火防止
-          Quagga.stop();          // ★ カメラ停止
+          saveBook(info);         
+          cameraStopped = true;
+          Quagga.stop();
           isProcessing = false;
-          return;                 // ★ showInitial を呼ばない
+
+          showInitial();   // ★ カメラを閉じて初期画面へ戻る（行は維持）
+          return;
       }
 
       duplicateAlertShown = false;
 
-      cameraStopped = true;       // ★ 二重発火防止
+      cameraStopped = true;
       Quagga.stop();
       showInitial();
 
@@ -401,11 +373,11 @@ function showCamera() {
   });
 }
 
-
 /* -----------------------------------
    カメラ停止
 ----------------------------------- */
 function stopCamera() {
+  cameraStopped = true;
   Quagga.stop();
   const cam = document.querySelector('#camera');
   if (cam) cam.innerHTML = "";
