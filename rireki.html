@@ -8,7 +8,7 @@
 
 <body>
 
-<h2>読み取り履歴5</h2>
+<h2>読み取り履歴6</h2>
 
 <!-- 並び替えボタン -->
 <div style="margin:10px; text-align:center;">
@@ -18,17 +18,17 @@
 
 <!-- タブ分類 -->
 <div id="tabs" style="margin:10px; text-align:center;">
-  <button onclick="renderBookList('title','ア行')">ア行</button>
-  <button onclick="renderBookList('title','カ行')">カ行</button>
-  <button onclick="renderBookList('title','サ行')">サ行</button>
-  <button onclick="renderBookList('title','タ行')">タ行</button>
-  <button onclick="renderBookList('title','ナ行')">ナ行</button>
-  <button onclick="renderBookList('title','ハ行')">ハ行</button>
-  <button onclick="renderBookList('title','マ行')">マ行</button>
-  <button onclick="renderBookList('title','ヤ行')">ヤ行</button>
-  <button onclick="renderBookList('title','ラ行')">ラ行</button>
-  <button onclick="renderBookList('title','ワ行')">ワ行</button>
-  <button onclick="renderBookList('title','その他')">その他</button>
+  <button onclick="renderBookList(currentSort,'ア行')">ア行</button>
+  <button onclick="renderBookList(currentSort,'カ行')">カ行</button>
+  <button onclick="renderBookList(currentSort,'サ行')">サ行</button>
+  <button onclick="renderBookList(currentSort,'タ行')">タ行</button>
+  <button onclick="renderBookList(currentSort,'ナ行')">ナ行</button>
+  <button onclick="renderBookList(currentSort,'ハ行')">ハ行</button>
+  <button onclick="renderBookList(currentSort,'マ行')">マ行</button>
+  <button onclick="renderBookList(currentSort,'ヤ行')">ヤ行</button>
+  <button onclick="renderBookList(currentSort,'ラ行')">ラ行</button>
+  <button onclick="renderBookList(currentSort,'ワ行')">ワ行</button>
+  <button onclick="renderBookList(currentSort,'その他')">その他</button>
 </div>
 
 <!-- 上段：読み取りボタン or カメラ -->
@@ -50,6 +50,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
 <script>
+let currentSort = "title";
 
 /* -----------------------------------
    カタカナ → ひらがな変換
@@ -129,18 +130,18 @@ function saveBook(info) {
     const books = getBooks();
     books.push(info);
     localStorage.setItem("books", JSON.stringify(books));
-    renderBookList();
+    renderBookList(currentSort);
 }
 
 function deleteBook(index) {
     const books = getBooks();
     books.splice(index, 1);
     localStorage.setItem("books", JSON.stringify(books));
-    renderBookList();
+    renderBookList(currentSort);
 }
 
 /* -----------------------------------
-   重複チェック
+   重複チェック（タイトル＋著者＋ヨミ）
 ----------------------------------- */
 function isDuplicate(info) {
     const books = getBooks();
@@ -175,6 +176,8 @@ function getGroupFromYomi(yomi) {
    一覧表示
 ----------------------------------- */
 function renderBookList(sortType = "title", group = null) {
+    currentSort = sortType;
+
     let books = getBooks();
 
     books.sort((a, b) => a[sortType].localeCompare(b[sortType]));
@@ -258,7 +261,7 @@ function showCamera() {
       isProcessing = true;
 
       const now = Date.now();
-      if (now - lastScanTime < 1000) {
+      if (now - lastScanTime < 800) { // 0.8秒以内の連続検出を無視
           isProcessing = false;
           return;
       }
