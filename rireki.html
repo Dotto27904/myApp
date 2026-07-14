@@ -22,7 +22,7 @@
 
 <body>
 
-<h2>読書ノート11</h2>
+<h2>読書ノート12</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 読み込んだデータは、本のタイトルごとに表示することができます。<br>
 稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
@@ -274,6 +274,9 @@ function showCamera() {
 
   duplicateAlertShown = false;
   cameraStopped = false;
+
+  // ★★★ 追加：読み取り状態を完全リセット ★★★
+  isProcessing = false;
 
   // ★★★ ここで lastCode を必ずリセットする ★★★
   lastCode = "";
