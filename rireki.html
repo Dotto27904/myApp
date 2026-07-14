@@ -8,7 +8,7 @@
 
 <body>
 
-<h2>読み取り履歴4</h2>
+<h2>読み取り履歴5</h2>
 
 <!-- 並び替えボタン -->
 <div style="margin:10px; text-align:center;">
@@ -67,9 +67,18 @@ function kataToHira(str) {
 function fallbackYomi(title) {
     let t = title;
 
-    // 英字 → カタカナ
+    // 全角カタカナ → ひらがな
+    t = kataToHira(t);
+
+    // 半角カナ → 全角 → ひらがな
+    t = t.replace(/[\uFF65-\uFF9F]/g, s => {
+        return kataToHira(s.normalize("NFKC"));
+    });
+
+    // 英字 → カタカナ → ひらがな
     t = t.replace(/[A-Za-z]/g, s => {
-        return String.fromCharCode(s.toUpperCase().charCodeAt(0) + 0x60);
+        const kana = String.fromCharCode(s.toUpperCase().charCodeAt(0) + 0x60);
+        return kataToHira(kana);
     });
 
     // 数字 → よみ
@@ -78,8 +87,7 @@ function fallbackYomi(title) {
         return map[parseInt(s)];
     });
 
-    // カタカナ → ひらがな
-    return kataToHira(t);
+    return t;
 }
 
 /* -----------------------------------
@@ -232,14 +240,14 @@ function showCamera() {
           target: document.querySelector('#camera'),
           constraints: { facingMode: "environment" }
       },
-      decoder: { readers: ["ean_reader"] }   <!-- ★EAN-13全部読む（高速） -->
+      decoder: { readers: ["ean_reader"] }  // EAN-13全部読む
   }, function(err) {
       if (err) { console.log(err); return; }
       Quagga.start();
   });
 
   /* -----------------------------------
-     読み取り処理（強力ロック＋誤読チェック＋ISBNフィルタ）
+     読み取り処理（ロック＋ISBNフィルタ＋誤読チェック）
   ----------------------------------- */
   let lastScanTime = 0;
   let isProcessing = false;
@@ -259,19 +267,14 @@ function showCamera() {
       const isbn = data.codeResult.code;
       console.log("ISBN候補:", isbn);
 
-      /* -------------------------------
-         ★ ISBNフィルタ（978/979）
-         → 上段でも下段でもISBNだけ採用
-      ------------------------------- */
+      // ISBNフィルタ（978/979のみ採用）
       if (!isbn.startsWith("978") && !isbn.startsWith("979")) {
           console.log("ISBNではない:", isbn);
           isProcessing = false;
           return;
       }
 
-      /* -------------------------------
-         ★ 誤読チェック（13桁の数字）
-      ------------------------------- */
+      // 誤読チェック（13桁の数字）
       if (!isbn || isbn.length !== 13 || !/^\d{13}$/.test(isbn)) {
           console.log("誤読:", isbn);
           isProcessing = false;
@@ -286,9 +289,7 @@ function showCamera() {
           return;
       }
 
-      /* -------------------------------
-         ★ 重複チェック（固まり防止）
-      ------------------------------- */
+      // 重複チェック（1回だけアラート）
       if (isDuplicate(info)) {
           alert("この本はすでに登録されています");
           Quagga.stop();
