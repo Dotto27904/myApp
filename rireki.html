@@ -8,7 +8,7 @@
 
 <body>
 
-<h2>読み取り履歴7</h2>
+<h2>読み取り履歴8</h2>
 
 <!-- 並び替えボタン -->
 <div style="margin:10px; text-align:center;">
@@ -119,6 +119,7 @@ async function fetchBookInfo(isbn) {
     // ひらがなで統一
     yomi = kataToHira(yomi);
 
+    // ★ ISBNも含めて保存用オブジェクトを返す
     return { isbn, title, author, yomi };
 }
 
@@ -132,6 +133,13 @@ function getBooks() {
 function saveBook(info) {
     const books = getBooks();
     books.push(info);
+    localStorage.setItem("books", JSON.stringify(books));
+    renderBookList(currentSort);
+}
+
+function updateBook(index, info) {
+    const books = getBooks();
+    books[index] = info;
     localStorage.setItem("books", JSON.stringify(books));
     renderBookList(currentSort);
 }
@@ -172,6 +180,32 @@ function getGroupFromYomi(yomi) {
 }
 
 /* -----------------------------------
+   編集ダイアログ
+----------------------------------- */
+function editBook(index) {
+    const books = getBooks();
+    const book = books[index];
+
+    const newTitle = prompt("タイトルを編集", book.title);
+    if (newTitle === null) return;
+
+    const newAuthor = prompt("著者を編集", book.author);
+    if (newAuthor === null) return;
+
+    const newYomi = prompt("ヨミ（ひらがな）を編集", book.yomi);
+    if (newYomi === null) return;
+
+    const updated = {
+        isbn: book.isbn,
+        title: newTitle,
+        author: newAuthor,
+        yomi: kataToHira(newYomi)
+    };
+
+    updateBook(index, updated);
+}
+
+/* -----------------------------------
    一覧表示
 ----------------------------------- */
 function renderBookList(sortType = "title", group = null) {
@@ -196,7 +230,10 @@ function renderBookList(sortType = "title", group = null) {
 
         div.innerHTML = `
             <strong>${book.title}</strong><br>
-            ${book.author}<br>
+            著者：${book.author}<br>
+            ヨミ：${book.yomi}<br>
+            ISBN：${book.isbn}<br>
+            <button onclick="editBook(${index})">編集</button>
             <button onclick="deleteBook(${index})">削除</button>
         `;
 
