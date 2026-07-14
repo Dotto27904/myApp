@@ -52,6 +52,31 @@
 <script>
 
 /* -----------------------------------
+   カタカナ → ひらがな変換
+----------------------------------- */
+function kataToHira(str) {
+    return str.replace(/[\u30A1-\u30F6]/g, function(match) {
+        const chr = match.charCodeAt(0) - 0x60;
+        return String.fromCharCode(chr);
+    });
+}
+
+/* -----------------------------------
+   fallback：タイトルから読みを生成
+----------------------------------- */
+function fallbackYomi(title) {
+    let t = title;
+
+    // アルファベット → カタカナ化（簡易）
+    t = t.replace(/[A-Za-z]/g, s => {
+        return String.fromCharCode(s.toUpperCase().charCodeAt(0) + 0x60);
+    });
+
+    // カタカナ → ひらがな
+    return kataToHira(t);
+}
+
+/* -----------------------------------
    OpenBD API（タイトル・著者・ヨミ）
 ----------------------------------- */
 async function fetchBookInfo(isbn) {
@@ -65,12 +90,16 @@ async function fetchBookInfo(isbn) {
     const title = summary.title || "タイトル不明";
     const author = summary.author || "著者不明";
 
-    // 読み（ヨミ）を取得
     let yomi = "";
     try {
         yomi = data[0].onix.DescriptiveDetail.TitleDetail.TitleElement.TitleText.collationkey || "";
     } catch(e) {
-        yomi = title; // 読みが無い場合はタイトルそのまま
+        yomi = "";
+    }
+
+    // 読みが無い場合はタイトルから生成
+    if (!yomi) {
+        yomi = fallbackYomi(title);
     }
 
     return { title, author, yomi };
@@ -95,6 +124,18 @@ function deleteBook(index) {
     books.splice(index, 1);
     localStorage.setItem("books", JSON.stringify(books));
     renderBookList();
+}
+
+/* -----------------------------------
+   重複チェック
+----------------------------------- */
+function isDuplicate(info) {
+    const books = getBooks();
+    return books.some(book =>
+        book.title === info.title &&
+        book.author === info.author &&
+        book.yomi === info.yomi
+    );
 }
 
 /* -----------------------------------
@@ -123,10 +164,8 @@ function getGroupFromYomi(yomi) {
 function renderBookList(sortType = "title", group = null) {
     let books = getBooks();
 
-    // 並び替え
     books.sort((a, b) => a[sortType].localeCompare(b[sortType]));
 
-    // タブ分類
     if (group) {
         books = books.filter(book => getGroupFromYomi(book.yomi) === group);
     }
@@ -195,12 +234,27 @@ function showCamera() {
   });
 
   Quagga.onDetected(async function(data) {
+
       const isbn = data.codeResult.code;
+      console.log("ISBN:", isbn);
+
+      // ★ ISBN誤読チェック（重要）
+      if (!isbn || isbn.length !== 13 || !/^\d{13}$/.test(isbn)) {
+          console.log("誤読:", isbn);
+          return;   // カメラは続行
+      }
 
       const info = await fetchBookInfo(isbn);
 
+      // ★ 書誌データが無い場合はカメラを止めない
       if (!info) {
-          alert("書籍データが見つかりません");
+          alert("書誌データがありません（OpenBDに情報がありません）");
+          return;
+      }
+
+      // ★ 重複チェック
+      if (isDuplicate(info)) {
+          alert("この本はすでに登録されています");
           return;
       }
 
