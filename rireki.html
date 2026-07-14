@@ -22,7 +22,7 @@
 
 <body>
 
-<h2>読書ノート6</h2>
+<h2>読書ノート7</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 読み込んだデータは、本のタイトルごとに表示することができます。<br>
 稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
@@ -295,9 +295,12 @@ function showInitial() {
 /* -----------------------------------
    読み取り状態
 ----------------------------------- */
+let cameraStopped = false;   // ★ グローバルに追加しておく
+
 function showCamera() {
 
-  duplicateAlertShown = false;   // ★ 読み取り開始時に必ずリセット
+  duplicateAlertShown = false;
+  cameraStopped = false;     // ★ 読み取り開始時にリセット
 
   document.getElementById("top-area").innerHTML = `
     <div id="camera" style="width:100%; max-width:400px; margin:auto;"></div>
@@ -330,8 +333,8 @@ function showCamera() {
 
   Quagga.onDetected(async function(data) {
 
-      // ★ カメラ停止後の二重発火を防ぐ
-      if (!Quagga.running) return;
+      // ★ カメラ停止後の二重発火を完全に防ぐ
+      if (cameraStopped) return;
 
       const now = Date.now();
       const code = data.codeResult.code;
@@ -369,6 +372,7 @@ function showCamera() {
               alert("この本はすでに登録されています");
               duplicateAlertShown = true;
           }
+          cameraStopped = true;   // ★ 二重発火防止
           Quagga.stop();
           showInitial();
           isProcessing = false;
@@ -380,20 +384,23 @@ function showCamera() {
       );
 
       if (ok) {
-          saveBook(info);   // ★ サ行へ移動
-          Quagga.stop();    // ★ カメラ停止
+          saveBook(info);         // ★ 該当行へ移動
+          cameraStopped = true;   // ★ 二重発火防止
+          Quagga.stop();          // ★ カメラ停止
           isProcessing = false;
-          return;           // ★ showInitial を呼ばない（スマホ対策）
+          return;                 // ★ showInitial を呼ばない
       }
 
       duplicateAlertShown = false;
 
+      cameraStopped = true;       // ★ 二重発火防止
       Quagga.stop();
       showInitial();
 
       isProcessing = false;
   });
 }
+
 
 /* -----------------------------------
    カメラ停止
