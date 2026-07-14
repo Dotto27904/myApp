@@ -22,7 +22,7 @@
 
 <body>
 
-<h2>読書ノート4</h2>
+<h2>読書ノート5</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 読み込んだデータは、本のタイトルごとに表示することができます。<br>
 稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
@@ -377,10 +377,13 @@ function showCamera() {
       );
 
       if (ok) {
-          saveBook(info);
+          saveBook(info);   // ★ サ行へ移動
+          Quagga.stop();    // ★ カメラ停止
+          isProcessing = false;
+          return;           // ★ showInitial を呼ばない（スマホ対策）
       }
 
-      duplicateAlertShown = false; // ★ 次の読み取りに備えてリセット
+      duplicateAlertShown = false;
 
       Quagga.stop();
       showInitial();
