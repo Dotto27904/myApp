@@ -8,7 +8,7 @@
 
 <body>
 
-<h2>読み取り履歴1</h2>
+<h2>読み取り履歴2</h2>
 
 <!-- 並び替えボタン -->
 <div style="margin:10px; text-align:center;">
@@ -233,27 +233,34 @@ function showCamera() {
   });
 
   /* -----------------------------------
-     読み取り処理（強力ロック＋誤読チェック＋1秒ロック）
+     読み取り処理（強力ロック＋誤読チェック＋ISBNフィルタ）
   ----------------------------------- */
   let lastScanTime = 0;
   let isProcessing = false;
 
   Quagga.onDetected(async function(data) {
 
-      if (isProcessing) return;     // ★ 強力ロック
+      if (isProcessing) return;
       isProcessing = true;
 
       const now = Date.now();
       if (now - lastScanTime < 1000) {
           isProcessing = false;
-          return;   // ★ 1秒以内の連続検出を無視
+          return;
       }
       lastScanTime = now;
 
       const isbn = data.codeResult.code;
       console.log("ISBN:", isbn);
 
-      // ★ ISBN誤読チェック
+      // ★ ISBNフィルタ（978/979で始まるものだけ採用）
+      if (!isbn.startsWith("978") && !isbn.startsWith("979")) {
+          console.log("ISBNではないバーコード:", isbn);
+          isProcessing = false;
+          return;
+      }
+
+      // ★ ISBN誤読チェック（13桁の数字）
       if (!isbn || isbn.length !== 13 || !/^\d{13}$/.test(isbn)) {
           console.log("誤読:", isbn);
           isProcessing = false;
@@ -262,14 +269,12 @@ function showCamera() {
 
       const info = await fetchBookInfo(isbn);
 
-      // ★ 書誌データなし
       if (!info) {
           alert("書誌データがありません（OpenBDに情報がありません）");
           isProcessing = false;
           return;
       }
 
-      // ★ 重複チェック
       if (isDuplicate(info)) {
           alert("この本はすでに登録されています");
           isProcessing = false;
@@ -292,10 +297,15 @@ function showCamera() {
 }
 
 /* -----------------------------------
-   カメラ停止
+   カメラ停止（固まり防止）
 ----------------------------------- */
 function stopCamera() {
   Quagga.stop();
+
+  // ★ カメラ映像を消す（固まり防止）
+  const cam = document.querySelector('#camera');
+  if (cam) cam.innerHTML = "";
+
   showInitial();
 }
 
