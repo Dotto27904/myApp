@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート10</title>
+  <title>読書ノート11</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -22,7 +22,7 @@
 
 <body>
 
-<h2>読書ノート10</h2>
+<h2>読書ノート11</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 読み込んだデータは、本のタイトルごとに表示することができます。<br>
 稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
@@ -313,7 +313,13 @@ function showCamera() {
       const now = Date.now();
       const code = data.codeResult.code;
 
-      // ★★★ 読み取った ISBN を必ず表示する ★★★
+      // ★★★ ISBN（978/979）以外は絶対に保存しない ★★★
+      if (!code.startsWith("978") && !code.startsWith("979")) {
+          // JANコード（192〜）はここで捨てる
+          return;
+      }
+
+      // ★★★ ISBN のみ alert 表示 ★★★
       alert("読み取ったISBN: " + code);
 
       if (code === lastCode && now - lastScanTime < 3000) return;
@@ -325,16 +331,6 @@ function showCamera() {
       isProcessing = true;
 
       const isbn = code;
-
-      if (!isbn.startsWith("978") && !isbn.startsWith("979")) {
-          isProcessing = false;
-          return;
-      }
-
-      if (!isbn || isbn.length !== 13 || !/^\d{13}$/.test(isbn)) {
-          isProcessing = false;
-          return;
-      }
 
       const info = await fetchBookInfo(isbn);
 
