@@ -22,10 +22,10 @@
 
 <body>
 
-<h2>読書ノート2</h2>
-　読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
-　読み込んだデータは、本のタイトルごとに表示することができます。<br>
-　稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
+<h2>読書ノート3</h2>
+読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
+読み込んだデータは、本のタイトルごとに表示することができます。<br>
+稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
 
 <!-- 上段：読み取りボタン or カメラ -->
 <div id="top-area" style="margin:20px; text-align:center;">
@@ -65,6 +65,7 @@
 <script>
 let currentSort = "title";
 let currentGroup = "ア行";   // 現在表示中の行（フィルタ維持用）
+let duplicateAlertShown = false; // ★ 重複アラートの状態をグローバル管理
 
 /* -----------------------------------
    カタカナ → ひらがな変換
@@ -155,8 +156,7 @@ function deleteBook(index) {
     const books = getBooks();
     books.splice(index, 1);
     localStorage.setItem("books", JSON.stringify(books));
-    // ★ 削除後も現在の行フィルタを維持
-    renderBookList(currentSort, currentGroup);
+    renderBookList(currentSort, currentGroup); // ★ フィルタ維持
 }
 
 /* -----------------------------------
@@ -234,16 +234,19 @@ function editBook(index) {
 ----------------------------------- */
 function renderBookList(sortType = "title", group = null) {
     currentSort = sortType;
-    if (group !== null) currentGroup = group;
+
+    // ★ group が指定されたら必ず currentGroup を更新
+    if (group !== null) {
+        currentGroup = group;
+    }
 
     const allBooks = getBooks();
     let books = [...allBooks];
 
     books.sort((a, b) => a[sortType].localeCompare(b[sortType]));
 
-    if (currentGroup) {
-        books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
-    }
+    // ★ currentGroup を使ってフィルタ
+    books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
 
     const list = document.getElementById("book-list");
     list.innerHTML = "";
@@ -273,6 +276,9 @@ function renderBookList(sortType = "title", group = null) {
    初期状態
 ----------------------------------- */
 function showInitial() {
+
+  duplicateAlertShown = false;   // ★ 初期状態で必ずリセット
+
   document.getElementById("top-area").innerHTML = `
     <button id="start-btn" style="padding:10px 20px; font-size:18px;">
       バーコード読み込み
@@ -292,6 +298,8 @@ function showInitial() {
 ----------------------------------- */
 function showCamera() {
 
+  duplicateAlertShown = false;   // ★ 読み取り開始時に必ずリセット
+
   document.getElementById("top-area").innerHTML = `
     <div id="camera" style="width:100%; max-width:400px; margin:auto;"></div>
   `;
@@ -307,7 +315,6 @@ function showCamera() {
   let isProcessing = false;
   let lastScanTime = 0;
   let lastCode = "";
-  let duplicateAlertShown = false;
 
   Quagga.init({
       inputStream: {
@@ -374,8 +381,7 @@ function showCamera() {
           saveBook(info);
       }
 
-      // 次の読み取りに備えてリセット
-      duplicateAlertShown = false;
+      duplicateAlertShown = false; // ★ 次の読み取りに備えてリセット
 
       Quagga.stop();
       showInitial();
