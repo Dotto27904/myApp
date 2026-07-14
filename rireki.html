@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート8</title>
+  <title>読書ノート9</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -22,7 +22,7 @@
 
 <body>
 
-<h2>読書ノート8</h2>
+<h2>読書ノート9</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 読み込んだデータは、本のタイトルごとに表示することができます。<br>
 稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
@@ -67,6 +67,9 @@ let currentSort = "title";
 let currentGroup = "ア行";   // 初期はア行
 let duplicateAlertShown = false;
 let cameraStopped = false;
+
+// ★★★ ここが今回の重要修正ポイント ★★★
+let lastCode = "";   // グローバルに移動（スマホでの誤判定防止）
 
 /* -----------------------------------
    カタカナ → ひらがな変換
@@ -141,10 +144,10 @@ function saveBook(info) {
     localStorage.setItem("books", JSON.stringify(books));
 
     const group = getGroupFromYomi(info.yomi);
-    currentGroup = group;   // ★ 行を更新
+    currentGroup = group;
     alert("登録完了");
 
-    renderBookList("title", group);  // ★ 行に切り替えた状態で一覧更新
+    renderBookList("title", group);
 }
 
 /* -----------------------------------
@@ -261,7 +264,6 @@ function showInitial() {
 
   document.getElementById("start-btn").onclick = showCamera;
 
-  // ★ currentGroup を維持したまま一覧を描画
   renderBookList(currentSort, currentGroup);
 }
 
@@ -272,6 +274,9 @@ function showCamera() {
 
   duplicateAlertShown = false;
   cameraStopped = false;
+
+  // ★★★ ここで lastCode を必ずリセットする（今回の修正の核心）★★★
+  lastCode = "";
 
   document.getElementById("top-area").innerHTML = `
     <div id="camera" style="width:100%; max-width:400px; margin:auto;"></div>
@@ -287,7 +292,6 @@ function showCamera() {
 
   let isProcessing = false;
   let lastScanTime = 0;
-  let lastCode = "";
 
   Quagga.init({
       inputStream: {
@@ -354,12 +358,12 @@ function showCamera() {
       );
 
       if (ok) {
-          saveBook(info);         
+          saveBook(info);
           cameraStopped = true;
           Quagga.stop();
           isProcessing = false;
 
-          showInitial();   // ★ カメラを閉じて初期画面へ戻る（行は維持）
+          showInitial();
           return;
       }
 
