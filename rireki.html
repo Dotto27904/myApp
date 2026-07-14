@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>読み取り履歴</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+
+<h2>読み取り履歴</h2>
+
+<!-- 並び替えボタン -->
+<div style="margin:10px; text-align:center;">
+  <button onclick="renderBookList('title')">タイトル順で表示</button>
+  <button onclick="renderBookList('author')">作者順で表示</button>
+</div>
+
+<!-- タブ分類 -->
+<div id="tabs" style="margin:10px; text-align:center;">
+  <button onclick="renderBookList('title','ア行')">ア行</button>
+  <button onclick="renderBookList('title','カ行')">カ行</button>
+  <button onclick="renderBookList('title','サ行')">サ行</button>
+  <button onclick="renderBookList('title','タ行')">タ行</button>
+  <button onclick="renderBookList('title','ナ行')">ナ行</button>
+  <button onclick="renderBookList('title','ハ行')">ハ行</button>
+  <button onclick="renderBookList('title','マ行')">マ行</button>
+  <button onclick="renderBookList('title','ヤ行')">ヤ行</button>
+  <button onclick="renderBookList('title','ラ行')">ラ行</button>
+  <button onclick="renderBookList('title','ワ行')">ワ行</button>
+  <button onclick="renderBookList('title','その他')">その他</button>
+</div>
+
+<!-- 上段：読み取りボタン or カメラ -->
+<div id="top-area" style="margin:20px; text-align:center;">
+  <button id="start-btn" style="padding:10px 20px; font-size:18px;">
+    読み取りを開始
+  </button>
+</div>
+
+<!-- 中段：読み取り終了ボタン -->
+<div id="middle-area" style="margin:20px; text-align:center;"></div>
+
+<!-- 下段：読み込んだ本一覧 -->
+<div id="bottom-area" style="margin:20px;">
+  <h3>読み込んだ本一覧</h3>
+  <div id="book-list"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+
+<script>
+
+/* -----------------------------------
+   OpenBD API（タイトル・著者・ヨミ）
+----------------------------------- */
+async function fetchBookInfo(isbn) {
+    const url = `https://api.openbd.jp/v1/get?isbn=${isbn}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data[0]) return null;
+
+    const summary = data[0].summary;
+    const title = summary.title || "タイトル不明";
+    const author = summary.author || "著者不明";
+
+    // 読み（ヨミ）を取得
+    let yomi = "";
+    try {
+        yomi = data[0].onix.DescriptiveDetail.TitleDetail.TitleElement.TitleText.collationkey || "";
+    } catch(e) {
+        yomi = title; // 読みが無い場合はタイトルそのまま
+    }
+
+    return { title, author, yomi };
+}
+
+/* -----------------------------------
+   localStorage
+----------------------------------- */
+function getBooks() {
+    return JSON.parse(localStorage.getItem("books") || "[]");
+}
+
+function saveBook(info) {
+    const books = getBooks();
+    books.push(info);
+    localStorage.setItem("books", JSON.stringify(books));
+    renderBookList();
+}
+
+function deleteBook(index) {
+    const books = getBooks();
+    books.splice(index, 1);
+    localStorage.setItem("books", JSON.stringify(books));
+    renderBookList();
+}
+
+/* -----------------------------------
+   読み（ヨミ）から行を判定
+----------------------------------- */
+function getGroupFromYomi(yomi) {
+    const first = yomi.charAt(0);
+
+    if ("あいうえお".includes(first)) return "ア行";
+    if ("かきくけこ".includes(first)) return "カ行";
+    if ("さしすせそ".includes(first)) return "サ行";
+    if ("たちつてと".includes(first)) return "タ行";
+    if ("なにぬねの".includes(first)) return "ナ行";
+    if ("はひふへほ".includes(first)) return "ハ行";
+    if ("まみむめも".includes(first)) return "マ行";
+    if ("やゆよ".includes(first)) return "ヤ行";
+    if ("らりるれろ".includes(first)) return "ラ行";
+    if ("わをん".includes(first)) return "ワ行";
+
+    return "その他";
+}
+
+/* -----------------------------------
+   一覧表示（並び替え＋タブ分類）
+----------------------------------- */
+function renderBookList(sortType = "title", group = null) {
+    let books = getBooks();
+
+    // 並び替え
+    books.sort((a, b) => a[sortType].localeCompare(b[sortType]));
+
+    // タブ分類
+    if (group) {
+        books = books.filter(book => getGroupFromYomi(book.yomi) === group);
+    }
+
+    const list = document.getElementById("book-list");
+    list.innerHTML = "";
+
+    books.forEach((book, index) => {
+        const div = document.createElement("div");
+        div.style.margin = "8px 0";
+        div.style.padding = "8px";
+        div.style.border = "1px solid #ccc";
+
+        div.innerHTML = `
+            <strong>${book.title}</strong><br>
+            ${book.author}<br>
+            <button onclick="deleteBook(${index})">削除</button>
+        `;
+
+        list.appendChild(div);
+    });
+}
+
+/* -----------------------------------
+   初期状態
+----------------------------------- */
+function showInitial() {
+  document.getElementById("top-area").innerHTML = `
+    <button id="start-btn" style="padding:10px 20px; font-size:18px;">
+      読み取りを開始
+    </button>
+  `;
+  document.getElementById("middle-area").innerHTML = "";
+
+  document.getElementById("start-btn").onclick = showCamera;
+}
+
+/* -----------------------------------
+   読み取り状態
+----------------------------------- */
+function showCamera() {
+
+  document.getElementById("top-area").innerHTML = `
+    <div id="camera" style="width:100%; max-width:400px; margin:auto;"></div>
+  `;
+
+  document.getElementById("middle-area").innerHTML = `
+    <button id="stop-btn" style="padding:10px 20px; font-size:18px;">
+      読み取りを終わる
+    </button>
+  `;
+
+  document.getElementById("stop-btn").onclick = stopCamera;
+
+  Quagga.init({
+      inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#camera'),
+          constraints: { facingMode: "environment" }
+      },
+      decoder: { readers: ["ean_reader"] }
+  }, function(err) {
+      if (err) { console.log(err); return; }
+      Quagga.start();
+  });
+
+  Quagga.onDetected(async function(data) {
+      const isbn = data.codeResult.code;
+
+      const info = await fetchBookInfo(isbn);
+
+      if (!info) {
+          alert("書籍データが見つかりません");
+          return;
+      }
+
+      const ok = confirm(
+          `タイトル：${info.title}\n著者：${info.author}\n\n取り込みますか？`
+      );
+
+      if (ok) {
+          saveBook(info);
+      }
+
+      Quagga.stop();
+      showInitial();
+  });
+}
+
+/* -----------------------------------
+   カメラ停止
+----------------------------------- */
+function stopCamera() {
+  Quagga.stop();
+  showInitial();
+}
+
+/* -----------------------------------
+   初期表示
+----------------------------------- */
+showInitial();
+renderBookList();
+
+</script>
+
+</body>
+</html>
