@@ -330,6 +330,9 @@ function showCamera() {
 
   Quagga.onDetected(async function(data) {
 
+      // ★ カメラ停止後の二重発火を防ぐ
+      if (!Quagga.running) return;
+
       const now = Date.now();
       const code = data.codeResult.code;
 
