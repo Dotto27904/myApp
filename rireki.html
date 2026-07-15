@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート12.6（改善版）</title>
+  <title>読書ノート12.7（ISBN改善＋新規トップ表示版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -35,7 +35,7 @@
     </button>
   </div>
 
-<h2>読書ノート12.6（改善版）</h2>
+<h2>読書ノート12.7（改善版）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
@@ -146,35 +146,17 @@ function saveBook(info) {
   books.push(info);
   localStorage.setItem("books", JSON.stringify(books));
 
-  const group = getGroupFromYomi(info.yomi);
-  currentGroup = group;
+  currentGroup = getGroupFromYomi(info.yomi);
   alert("登録完了");
 
-  // 新規登録した本を先頭に表示
-  renderBookList("yomi", group, info.isbn);
+  // ★ 表示は呼び出し側で行う（ここでは描画しない）
 }
 
 /* -----------------------------------
-   編集・削除
------------------------------------ */
-function updateBook(index, info) {
-  const books = getBooks();
-  books[index] = info;
-  localStorage.setItem("books", JSON.stringify(books));
-  renderBookList(currentSort, currentGroup);
-}
-
-function deleteBook(index) {
-  const books = getBooks();
-  books.splice(index, 1);
-  localStorage.setItem("books", JSON.stringify(books));
-  renderBookList(currentSort, currentGroup);
-}
-
-/* -----------------------------------
-   重複チェック
+   重複チェック（ISBN空欄は重複扱いしない）
 ----------------------------------- */
 function isDuplicate(info) {
+  if (!info.isbn) return false;
   return getBooks().some(book => book.isbn === info.isbn);
 }
 
@@ -214,7 +196,7 @@ function getGroupFromYomi(yomi) {
 }
 
 /* -----------------------------------
-   一覧表示（yomiでソート＋新規登録を先頭に）
+   一覧表示（yomiソート＋新規登録を先頭に）
 ----------------------------------- */
 function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
   currentSort = sortType;
@@ -226,7 +208,7 @@ function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
   books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
   books.sort((a, b) => (a.yomi || "").localeCompare(b.yomi || ""));
 
-  // 新規登録した本を先頭に移動
+  // ★ 新規登録した本を先頭に移動
   if (topIsbn) {
     const idx = books.findIndex(b => b.isbn === topIsbn);
     if (idx > -1) {
@@ -260,7 +242,7 @@ function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
 }
 
 /* -----------------------------------
-   編集画面（よみ入力制限＋「よみ：」表記）
+   編集画面
 ----------------------------------- */
 function editBook(index) {
   const book = getBooks()[index];
@@ -302,7 +284,7 @@ function applyEdit(index) {
 }
 
 /* -----------------------------------
-   手動登録フォーム（よみ入力制限＋「よみ：」表記）
+   手動登録フォーム（ISBN空欄OK）
 ----------------------------------- */
 function showManualEntryForm(isbn = "") {
   document.getElementById("top-area").innerHTML = `
@@ -310,7 +292,7 @@ function showManualEntryForm(isbn = "") {
       <h3>手動登録</h3>
 
       ISBN：<br>
-      <input id="m-isbn" type="text" value="${isbn}"><br><br>
+      <input id="m-isbn" type="text" value=""><br><br>
 
       タイトル：<br>
       <input id="m-title" type="text"><br><br>
@@ -336,8 +318,8 @@ function manualSave() {
     yomi: document.getElementById("m-yomi").value
   };
 
-  if (!info.isbn || !info.title || !info.yomi) {
-    alert("ISBN・タイトル・よみは必須です");
+  if (!info.title || !info.yomi) {
+    alert("タイトル・よみは必須です");
     return;
   }
 
@@ -348,6 +330,10 @@ function manualSave() {
   }
 
   saveBook(info);
+
+  const group = getGroupFromYomi(info.yomi);
+  renderBookList("yomi", group, info.isbn || null);
+
   alert("登録しました");
   showInitial();
 }
@@ -369,9 +355,9 @@ function showInitial() {
   document.getElementById("middle-area").innerHTML = "";
 
   document.getElementById("start-btn").onclick = showCamera;
-  document.getElementById("manual-btn").onclick = showManualEntryForm;
+  document.getElementById("manual-btn").onclick = () => showManualEntryForm();
 
-  renderBookList("yomi", currentGroup);
+  // ★ 初期表示では一覧を描画しない（行ボタンを押した時に描画）
 }
 
 /* -----------------------------------
@@ -435,7 +421,7 @@ function showCamera() {
       cameraStopped = true;
       Quagga.stop();
 
-      showManualEntryForm(isbn);
+      showManualEntryForm("");
 
       isProcessing = false;
       return;
@@ -459,6 +445,10 @@ function showCamera() {
 
     if (ok) {
       saveBook(info);
+
+      const group = getGroupFromYomi(info.yomi);
+      renderBookList("yomi", group, info.isbn);
+
       cameraStopped = true;
       Quagga.stop();
       isProcessing = false;
