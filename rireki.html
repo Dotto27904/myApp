@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート12.5（手動登録＋ヨミ制限＋ヨミソート版）</title>
+  <title>読書ノート12.6（改善版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -35,10 +35,10 @@
     </button>
   </div>
 
-<h2>読書ノート12.5（手動登録＋ヨミ制限＋ヨミソート版）</h2>
+<h2>読書ノート12.6（改善版）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
-ヨミは「ひらがな＋英字＋数字」のみ入力できます。
+よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
 
 <!-- 上段：読み取りボタン＋手動登録ボタン -->
 <div id="top-area" style="margin:20px; text-align:center;">
@@ -79,7 +79,7 @@ OpenBD にデータが無い場合は、手動登録できます。<br>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
 <script>
-let currentSort = "yomi";   // ★ ソート対象を yomi に変更
+let currentSort = "yomi";
 let currentGroup = "ア行";
 let duplicateAlertShown = false;
 let cameraStopped = false;
@@ -150,7 +150,8 @@ function saveBook(info) {
   currentGroup = group;
   alert("登録完了");
 
-  renderBookList("yomi", group);
+  // 新規登録した本を先頭に表示
+  renderBookList("yomi", group, info.isbn);
 }
 
 /* -----------------------------------
@@ -213,17 +214,26 @@ function getGroupFromYomi(yomi) {
 }
 
 /* -----------------------------------
-   一覧表示（★ ソートを yomi に変更）
+   一覧表示（yomiでソート＋新規登録を先頭に）
 ----------------------------------- */
-function renderBookList(sortType = "yomi", group = null) {
+function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
   currentSort = sortType;
   if (group !== null) currentGroup = group;
 
   const allBooks = getBooks();
   let books = [...allBooks];
 
-  books.sort((a, b) => (a.yomi || "").localeCompare(b.yomi || ""));
   books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
+  books.sort((a, b) => (a.yomi || "").localeCompare(b.yomi || ""));
+
+  // 新規登録した本を先頭に移動
+  if (topIsbn) {
+    const idx = books.findIndex(b => b.isbn === topIsbn);
+    if (idx > -1) {
+      const [target] = books.splice(idx, 1);
+      books.unshift(target);
+    }
+  }
 
   const list = document.getElementById("book-list");
   list.innerHTML = "";
@@ -239,7 +249,7 @@ function renderBookList(sortType = "yomi", group = null) {
     div.innerHTML = `
       <strong>${book.title}</strong><br>
       著者：${book.author}<br>
-      ヨミ：${book.yomi}<br>
+      よみ：${book.yomi}<br>
       ISBN：${book.isbn}<br>
       <button onclick="editBook(${originalIndex})">編集</button>
       <button onclick="deleteBook(${originalIndex})">削除</button>
@@ -250,7 +260,7 @@ function renderBookList(sortType = "yomi", group = null) {
 }
 
 /* -----------------------------------
-   編集画面（★ ヨミ入力制限追加）
+   編集画面（よみ入力制限＋「よみ：」表記）
 ----------------------------------- */
 function editBook(index) {
   const book = getBooks()[index];
@@ -268,20 +278,14 @@ function editBook(index) {
       著者：<br>
       <input id="e-author" value="${book.author}"><br><br>
 
-      ヨミ：<br>
-      <input id="e-yomi" value="${book.yomi}" 
-             oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9]/g, '');"><br>
-      <button onclick="autoEditYomi()">ヨミ自動生成</button><br><br>
+      よみ：<br>
+      <input id="e-yomi" value="${book.yomi}"
+             oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
 
       <button onclick="applyEdit(${index})">保存</button>
       <button onclick="showInitial()">キャンセル</button>
     </div>
   `;
-}
-
-function autoEditYomi() {
-  const title = document.getElementById("e-title").value;
-  document.getElementById("e-yomi").value = fallbackYomi(title);
 }
 
 function applyEdit(index) {
@@ -298,7 +302,7 @@ function applyEdit(index) {
 }
 
 /* -----------------------------------
-   手動登録フォーム（★ ヨミ入力制限追加）
+   手動登録フォーム（よみ入力制限＋「よみ：」表記）
 ----------------------------------- */
 function showManualEntryForm(isbn = "") {
   document.getElementById("top-area").innerHTML = `
@@ -314,20 +318,14 @@ function showManualEntryForm(isbn = "") {
       著者：<br>
       <input id="m-author" type="text"><br><br>
 
-      ヨミ：<br>
+      よみ：<br>
       <input id="m-yomi" type="text"
-             oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9]/g, '');"><br>
-      <button onclick="autoManualYomi()">ヨミ自動生成</button><br><br>
+             oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
 
       <button onclick="manualSave()">登録する</button>
       <button onclick="showInitial()">キャンセル</button>
     </div>
   `;
-}
-
-function autoManualYomi() {
-  const title = document.getElementById("m-title").value;
-  document.getElementById("m-yomi").value = fallbackYomi(title);
 }
 
 function manualSave() {
@@ -339,7 +337,7 @@ function manualSave() {
   };
 
   if (!info.isbn || !info.title || !info.yomi) {
-    alert("ISBN・タイトル・ヨミは必須です");
+    alert("ISBN・タイトル・よみは必須です");
     return;
   }
 
@@ -490,7 +488,6 @@ function stopCamera() {
    初期表示
 ----------------------------------- */
 showInitial();
-
 </script>
 
 </body>
