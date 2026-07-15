@@ -2,72 +2,45 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート13</title>
+  <title>読書ノート13（バックアップ版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <style>
-    .tab-button {
-      padding: 10px 15px;
-      margin: 4px;
-      font-size: 18px;
-      border-radius: 8px;
-      border: 1px solid #666;
-      background-color: #f0f0f0;
-    }
-    .tab-button:hover {
-      background-color: #e0e0e0;
-    }
-    .field-label {
-      font-weight: bold;
-    }
-    input[type="text"] {
-      width: 90%;
-      padding: 4px;
-      margin-top: 4px;
-    }
+    .tab-button { padding:10px; margin:4px; font-size:18px; }
+    input[type="text"] { width:90%; padding:4px; margin-top:4px; }
   </style>
 </head>
 
 <body>
 
-<h2>読書ノート13（ファイル保存＋手動登録版）</h2>
-<p>
-最初に「データファイル選択」ボタンから <strong>books.json</strong> を選んでください。<br>
-以後、読み込み・編集・削除のたびに自動でそのファイルに保存されます。
-</p>
+<h2>読書ノート13（バックアップ版）</h2>
 
-<!-- 上段：ファイル選択＋読み取りボタン or カメラ／手動登録フォーム -->
 <div id="top-area" style="margin:20px; text-align:center;">
-  <button id="file-btn" style="padding:10px 20px; font-size:18px;">
-    データファイル選択
-  </button>
-  <button id="start-btn" style="padding:10px 20px; font-size:18px; margin-left:10px;">
-    バーコード読み込み
-  </button>
+  <button onclick="startCamera()" style="padding:10px 20px; font-size:18px;">バーコード読み込み</button>
+  <button onclick="backupJSON()" style="padding:10px 20px; font-size:18px; margin-left:10px;">バックアップ保存</button>
+  <button onclick="restoreJSON()" style="padding:10px 20px; font-size:18px; margin-left:10px;">バックアップ復元</button>
+  <input type="file" id="restore-file" style="display:none;" accept=".json">
 </div>
 
 <h3>タイトル別</h3>
 
-<!-- タブ分類 -->
 <div id="tabs" style="margin:20px; text-align:center;">
-  <button class="tab-button" onclick="renderBookList(currentSort,'ア行')">あ行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'カ行')">か行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'サ行')">さ行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'タ行')">た行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'ナ行')">な行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'ハ行')">は行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'マ行')">ま行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'ヤ行')">や行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'ラ行')">ら行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'ワ行')">わ行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'その他')">その他</button>
+  <button class="tab-button" onclick="renderBookList('title','ア行')">あ行</button>
+  <button class="tab-button" onclick="renderBookList('title','カ行')">か行</button>
+  <button class="tab-button" onclick="renderBookList('title','サ行')">さ行</button>
+  <button class="tab-button" onclick="renderBookList('title','タ行')">た行</button>
+  <button class="tab-button" onclick="renderBookList('title','ナ行')">な行</button>
+  <button class="tab-button" onclick="renderBookList('title','ハ行')">は行</button>
+  <button class="tab-button" onclick="renderBookList('title','マ行')">ま行</button>
+  <button class="tab-button" onclick="renderBookList('title','ヤ行')">や行</button>
+  <button class="tab-button" onclick="renderBookList('title','ラ行')">ら行</button>
+  <button class="tab-button" onclick="renderBookList('title','ワ行')">わ行</button>
+  <button class="tab-button" onclick="renderBookList('title','その他')">その他</button>
 </div>
 
-<!-- 中段：読み取り終了ボタンなど -->
 <div id="middle-area" style="margin:20px; text-align:center;"></div>
 
-<!-- 下段：読み込んだ本一覧 -->
 <div id="bottom-area" style="margin:20px;">
   <h3>読んだ本一覧</h3>
   <div id="book-list"></div>
@@ -83,39 +56,78 @@ let cameraStopped = false;
 let lastCode = "";
 let isProcessing = false;
 
-// ファイル保存用
-let booksData = [];
-let booksFileHandle = null;
+/* -----------------------------------
+   localStorage に保存するデータ本体
+----------------------------------- */
+function loadBooks() {
+  const data = localStorage.getItem("booksData");
+  return data ? JSON.parse(data) : [];
+}
+
+function saveBooks(data) {
+  localStorage.setItem("booksData", JSON.stringify(data));
+}
+
+let booksData = loadBooks();
 
 /* -----------------------------------
-   カタカナ → ひらがな変換
+   バックアップ保存（JSONダウンロード）
 ----------------------------------- */
-function kataToHira(str) {
-  return str.replace(/[\u30A1-\u30F6]/g, function(match) {
-    const chr = match.charCodeAt(0) - 0x60;
-    return String.fromCharCode(chr);
-  });
+function backupJSON() {
+  const blob = new Blob([JSON.stringify(booksData, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "books_backup.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+  alert("バックアップを保存しました");
 }
 
 /* -----------------------------------
-   ヨミ用：ひらがなに統一＋記号除去
+   バックアップ復元（JSON読み込み）
+----------------------------------- */
+function restoreJSON() {
+  document.getElementById("restore-file").click();
+}
+
+document.getElementById("restore-file").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function() {
+    try {
+      booksData = JSON.parse(reader.result);
+      saveBooks(booksData);
+      alert("バックアップを復元しました");
+      renderBookList(currentSort, currentGroup);
+    } catch {
+      alert("JSONの読み込みに失敗しました");
+    }
+  };
+  reader.readAsText(file);
+});
+
+/* -----------------------------------
+   カタカナ → ひらがな
+----------------------------------- */
+function kataToHira(str) {
+  return str.replace(/[\u30A1-\u30F6]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60));
+}
+
+/* -----------------------------------
+   ヨミ生成
 ----------------------------------- */
 function normalizeYomi(str) {
   if (!str) return "";
-  let t = str;
-
-  t = kataToHira(t);
-  t = t.replace(/[\uFF65-\uFF9F]/g, s => kataToHira(s.normalize("NFKC")));
-  t = t.replace(/[A-Za-z]/g, s => kataToHira(String.fromCharCode(s.toUpperCase().charCodeAt(0) + 0x60)));
-  t = t.replace(/[0-9]/g, s => ["ぜろ","いち","に","さん","よん","ご","ろく","なな","はち","きゅう"][parseInt(s)]);
+  let t = kataToHira(str);
   t = t.replace(/[・。、「」『』（）()\s]/g, "");
-
   return t;
 }
 
-/* -----------------------------------
-   fallback：タイトルから読みを生成
------------------------------------ */
 function fallbackYomi(title) {
   return normalizeYomi(title);
 }
@@ -137,7 +149,7 @@ async function fetchBookInfo(isbn) {
   let yomi = "";
   try {
     yomi = data[0].onix.DescriptiveDetail.TitleDetail.TitleElement.TitleText.collationkey || "";
-  } catch(e) {
+  } catch {
     yomi = "";
   }
 
@@ -145,54 +157,6 @@ async function fetchBookInfo(isbn) {
   else yomi = normalizeYomi(yomi);
 
   return { isbn, title, author, yomi };
-}
-
-/* -----------------------------------
-   ファイル読み込み・保存
------------------------------------ */
-async function selectBooksFile() {
-  try {
-    const [handle] = await window.showOpenFilePicker({
-      types: [{
-        description: "JSON file",
-        accept: { "application/json": [".json"] }
-      }],
-      multiple: false
-    });
-    booksFileHandle = handle;
-    await loadBooksFromFile();
-    alert("books.json を読み込みました");
-    renderBookList(currentSort, currentGroup);
-  } catch (e) {
-    console.log(e);
-    alert("ファイル選択がキャンセルされました");
-  }
-}
-
-async function loadBooksFromFile() {
-  if (!booksFileHandle) return;
-  const file = await booksFileHandle.getFile();
-  const text = await file.text();
-  try {
-    booksData = JSON.parse(text);
-  } catch (e) {
-    booksData = [];
-  }
-}
-
-async function saveBooksToFile() {
-  if (!booksFileHandle) {
-    alert("books.json が選択されていません");
-    return;
-  }
-  try {
-    const writable = await booksFileHandle.createWritable();
-    await writable.write(JSON.stringify(booksData, null, 2));
-    await writable.close();
-  } catch (e) {
-    console.log(e);
-    alert("ファイル保存に失敗しました");
-  }
 }
 
 /* -----------------------------------
@@ -241,14 +205,9 @@ function getGroupFromYomi(yomi) {
 ----------------------------------- */
 function renderBookList(sortType = "title", group = null) {
   currentSort = sortType;
+  if (group !== null) currentGroup = group;
 
-  if (group !== null && group !== undefined) {
-    currentGroup = group;
-  }
-
-  const allBooks = booksData;
-  let books = [...allBooks];
-
+  let books = [...booksData];
   books.sort((a, b) => (a[sortType] || "").localeCompare(b[sortType] || ""));
   books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
 
@@ -275,25 +234,25 @@ function renderBookList(sortType = "title", group = null) {
 }
 
 /* -----------------------------------
-   編集・削除
+   編集
 ----------------------------------- */
 function editBook(index) {
   const book = booksData[index];
   document.getElementById("top-area").innerHTML = `
     <div style="padding:20px;">
       <h3>編集</h3>
-      <span class="field-label">タイトル：</span><br>
-      <input id="e-title" type="text" value="${book.title}"><br><br>
+      タイトル：<br>
+      <input id="e-title" value="${book.title}"><br><br>
 
-      <span class="field-label">著者：</span><br>
-      <input id="e-author" type="text" value="${book.author}"><br><br>
+      著者：<br>
+      <input id="e-author" value="${book.author}"><br><br>
 
-      <span class="field-label">ヨミ：</span><br>
-      <input id="e-yomi" type="text" value="${book.yomi}"><br>
+      ヨミ：<br>
+      <input id="e-yomi" value="${book.yomi}"><br>
       <button onclick="autoEditYomi()">ヨミ自動生成</button><br><br>
 
-      <span class="field-label">ISBN：</span><br>
-      <input id="e-isbn" type="text" value="${book.isbn}" readonly><br><br>
+      ISBN：<br>
+      <input id="e-isbn" value="${book.isbn}" readonly><br><br>
 
       <button onclick="applyEdit(${index})">保存</button>
       <button onclick="showInitial()">キャンセル</button>
@@ -306,43 +265,46 @@ function autoEditYomi() {
   document.getElementById("e-yomi").value = fallbackYomi(title);
 }
 
-async function applyEdit(index) {
+function applyEdit(index) {
   booksData[index] = {
     title: document.getElementById("e-title").value,
     author: document.getElementById("e-author").value,
     yomi: document.getElementById("e-yomi").value,
     isbn: document.getElementById("e-isbn").value
   };
-  await saveBooksToFile();
+  saveBooks(booksData);
   showInitial();
 }
 
-async function deleteBook(index) {
-  if (!confirm("この本を削除しますか？")) return;
+/* -----------------------------------
+   削除
+----------------------------------- */
+function deleteBook(index) {
+  if (!confirm("削除しますか？")) return;
   booksData.splice(index, 1);
-  await saveBooksToFile();
+  saveBooks(booksData);
   renderBookList(currentSort, currentGroup);
 }
 
 /* -----------------------------------
-   手動登録フォーム
+   手動登録
 ----------------------------------- */
 function showManualEntryForm(isbn) {
   document.getElementById("top-area").innerHTML = `
     <div style="padding:20px;">
       <h3>手動登録</h3>
-      <span class="field-label">タイトル：</span><br>
-      <input id="m-title" type="text"><br><br>
+      タイトル：<br>
+      <input id="m-title"><br><br>
 
-      <span class="field-label">著者：</span><br>
-      <input id="m-author" type="text"><br><br>
+      著者：<br>
+      <input id="m-author"><br><br>
 
-      <span class="field-label">ヨミ：</span><br>
-      <input id="m-yomi" type="text"><br>
+      ヨミ：<br>
+      <input id="m-yomi"><br>
       <button onclick="autoYomi()">ヨミ自動生成</button><br><br>
 
-      <span class="field-label">ISBN：</span><br>
-      <input id="m-isbn" type="text" value="${isbn}" readonly><br><br>
+      ISBN：<br>
+      <input id="m-isbn" value="${isbn}" readonly><br><br>
 
       <button onclick="manualSave()">登録する</button>
       <button onclick="showInitial()">キャンセル</button>
@@ -355,7 +317,7 @@ function autoYomi() {
   document.getElementById("m-yomi").value = fallbackYomi(title);
 }
 
-async function manualSave() {
+function manualSave() {
   const info = {
     title: document.getElementById("m-title").value,
     author: document.getElementById("m-author").value,
@@ -363,8 +325,8 @@ async function manualSave() {
     isbn: document.getElementById("m-isbn").value
   };
 
-  if (!info.title || !info.yomi || !info.isbn) {
-    alert("タイトル・ヨミ・ISBN は必須です");
+  if (!info.title || !info.yomi) {
+    alert("タイトルとヨミは必須です");
     return;
   }
 
@@ -375,42 +337,31 @@ async function manualSave() {
   }
 
   booksData.push(info);
-  await saveBooksToFile();
+  saveBooks(booksData);
   alert("登録しました");
   showInitial();
 }
 
 /* -----------------------------------
-   初期状態
+   初期表示
 ----------------------------------- */
 function showInitial() {
   duplicateAlertShown = false;
 
   document.getElementById("top-area").innerHTML = `
-    <button id="file-btn" style="padding:10px 20px; font-size:18px;">
-      データファイル選択
-    </button>
-    <button id="start-btn" style="padding:10px 20px; font-size:18px; margin-left:10px;">
-      バーコード読み込み
-    </button>
+    <button onclick="startCamera()" style="padding:10px 20px; font-size:18px;">バーコード読み込み</button>
+    <button onclick="backupJSON()" style="padding:10px 20px; font-size:18px; margin-left:10px;">バックアップ保存</button>
+    <button onclick="restoreJSON()" style="padding:10px 20px; font-size:18px; margin-left:10px;">バックアップ復元</button>
+    <input type="file" id="restore-file" style="display:none;" accept=".json">
   `;
-  document.getElementById("middle-area").innerHTML = "";
-
-  document.getElementById("file-btn").onclick = selectBooksFile;
-  document.getElementById("start-btn").onclick = showCamera;
 
   renderBookList(currentSort, currentGroup);
 }
 
 /* -----------------------------------
-   読み取り状態
+   カメラ起動
 ----------------------------------- */
-function showCamera() {
-  if (!booksFileHandle) {
-    alert("先に『データファイル選択』から books.json を選んでください");
-    return;
-  }
-
+function startCamera() {
   duplicateAlertShown = false;
   cameraStopped = false;
   isProcessing = false;
@@ -421,12 +372,8 @@ function showCamera() {
   `;
 
   document.getElementById("middle-area").innerHTML = `
-    <button id="stop-btn" style="padding:10px 20px; font-size:18px;">
-      読み取りを終わる
-    </button>
+    <button onclick="stopCamera()" style="padding:10px 20px; font-size:18px;">読み取りを終わる</button>
   `;
-
-  document.getElementById("stop-btn").onclick = stopCamera;
 
   let lastScanTime = 0;
 
@@ -449,9 +396,7 @@ function showCamera() {
     const now = Date.now();
     const code = data.codeResult.code;
 
-    if (!code.startsWith("978") && !code.startsWith("979")) {
-      return;
-    }
+    if (!code.startsWith("978") && !code.startsWith("979")) return;
 
     if (code === lastCode && now - lastScanTime < 3000) return;
 
@@ -465,7 +410,7 @@ function showCamera() {
     const info = await fetchBookInfo(isbn);
 
     if (!info) {
-      alert("書誌データがありません（OpenBDに情報がありません）\n手動で登録できます。");
+      alert("書誌データがありません（OpenBDに情報なし）\n手動登録できます。");
       cameraStopped = true;
       Quagga.stop();
       showManualEntryForm(isbn);
@@ -491,16 +436,15 @@ function showCamera() {
 
     if (ok) {
       booksData.push(info);
-      await saveBooksToFile();
-      alert("登録完了");
+      saveBooks(booksData);
+      alert("登録しました");
       cameraStopped = true;
       Quagga.stop();
-      isProcessing = false;
       showInitial();
+      isProcessing = false;
       return;
     }
 
-    duplicateAlertShown = false;
     cameraStopped = true;
     Quagga.stop();
     showInitial();
