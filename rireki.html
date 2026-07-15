@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート12.7（ISBN改善＋新規トップ表示版）</title>
+  <title>読書ノート12.8（最新版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -35,7 +35,7 @@
     </button>
   </div>
 
-<h2>読書ノート12.7（改善版）</h2>
+<h2>読書ノート12.8（最新版）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
@@ -286,7 +286,7 @@ function applyEdit(index) {
 /* -----------------------------------
    手動登録フォーム（ISBN空欄OK）
 ----------------------------------- */
-function showManualEntryForm(isbn = "") {
+function showManualEntryForm() {
   document.getElementById("top-area").innerHTML = `
     <div style="padding:20px;">
       <h3>手動登録</h3>
@@ -339,7 +339,7 @@ function manualSave() {
 }
 
 /* -----------------------------------
-   初期状態
+   初期状態（一覧は描画しない）
 ----------------------------------- */
 function showInitial() {
   duplicateAlertShown = false;
@@ -356,8 +356,6 @@ function showInitial() {
 
   document.getElementById("start-btn").onclick = showCamera;
   document.getElementById("manual-btn").onclick = () => showManualEntryForm();
-
-  // ★ 初期表示では一覧を描画しない（行ボタンを押した時に描画）
 }
 
 /* -----------------------------------
@@ -421,7 +419,7 @@ function showCamera() {
       cameraStopped = true;
       Quagga.stop();
 
-      showManualEntryForm("");
+      showManualEntryForm();
 
       isProcessing = false;
       return;
@@ -452,7 +450,19 @@ function showCamera() {
       cameraStopped = true;
       Quagga.stop();
       isProcessing = false;
-      showInitial();
+
+      // ★ showInitial() を呼ばない（一覧を保持する）
+      document.getElementById("top-area").innerHTML = `
+        <button id="start-btn" style="padding:10px 20px; font-size:18px;">
+          バーコード読み込み
+        </button>
+        <button id="manual-btn" style="padding:10px 20px; font-size:18px; margin-left:10px;">
+          手動登録
+        </button>
+      `;
+      document.getElementById("start-btn").onclick = showCamera;
+      document.getElementById("manual-btn").onclick = () => showManualEntryForm();
+
       return;
     }
 
