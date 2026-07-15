@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート12.5（手動登録版）</title>
+  <title>読書ノート12.5（手動登録＋ヨミ制限＋ヨミソート版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -35,10 +35,10 @@
     </button>
   </div>
 
-<h2>読書ノート12.5（手動登録版）</h2>
+<h2>読書ノート12.5（手動登録＋ヨミ制限＋ヨミソート版）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
-ISBN を自分で入力して登録することもできます。
+ヨミは「ひらがな＋英字＋数字」のみ入力できます。
 
 <!-- 上段：読み取りボタン＋手動登録ボタン -->
 <div id="top-area" style="margin:20px; text-align:center;">
@@ -79,7 +79,7 @@ ISBN を自分で入力して登録することもできます。
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
 <script>
-let currentSort = "title";
+let currentSort = "yomi";   // ★ ソート対象を yomi に変更
 let currentGroup = "ア行";
 let duplicateAlertShown = false;
 let cameraStopped = false;
@@ -150,7 +150,7 @@ function saveBook(info) {
   currentGroup = group;
   alert("登録完了");
 
-  renderBookList("title", group);
+  renderBookList("yomi", group);
 }
 
 /* -----------------------------------
@@ -188,7 +188,8 @@ function normalizeFirstKana(ch) {
     "ば":"は","び":"ひ","ぶ":"ふ","べ":"へ","ぼ":"ほ",
     "ぱ":"は","ぴ":"ひ","ぷ":"ふ","ぺ":"へ","ぽ":"ほ",
     "ぁ":"あ","ぃ":"い","ぅ":"う","ぇ":"え","ぉ":"お",
-    "ゃ":"や","ゅ":"ゆ","ょ":"よ","っ":"つ"
+    "ゃ":"や","ゅ":"ゆ","ょ":"よ",
+    "っ":"つ"
   };
   return map[ch] || ch;
 }
@@ -212,16 +213,16 @@ function getGroupFromYomi(yomi) {
 }
 
 /* -----------------------------------
-   一覧表示
+   一覧表示（★ ソートを yomi に変更）
 ----------------------------------- */
-function renderBookList(sortType = "title", group = null) {
+function renderBookList(sortType = "yomi", group = null) {
   currentSort = sortType;
   if (group !== null) currentGroup = group;
 
   const allBooks = getBooks();
   let books = [...allBooks];
 
-  books.sort((a, b) => (a[sortType] || "").localeCompare(b[sortType] || ""));
+  books.sort((a, b) => (a.yomi || "").localeCompare(b.yomi || ""));
   books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
 
   const list = document.getElementById("book-list");
@@ -249,7 +250,7 @@ function renderBookList(sortType = "title", group = null) {
 }
 
 /* -----------------------------------
-   編集画面
+   編集画面（★ ヨミ入力制限追加）
 ----------------------------------- */
 function editBook(index) {
   const book = getBooks()[index];
@@ -268,7 +269,8 @@ function editBook(index) {
       <input id="e-author" value="${book.author}"><br><br>
 
       ヨミ：<br>
-      <input id="e-yomi" value="${book.yomi}"><br>
+      <input id="e-yomi" value="${book.yomi}" 
+             oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9]/g, '');"><br>
       <button onclick="autoEditYomi()">ヨミ自動生成</button><br><br>
 
       <button onclick="applyEdit(${index})">保存</button>
@@ -296,7 +298,7 @@ function applyEdit(index) {
 }
 
 /* -----------------------------------
-   手動登録フォーム
+   手動登録フォーム（★ ヨミ入力制限追加）
 ----------------------------------- */
 function showManualEntryForm(isbn = "") {
   document.getElementById("top-area").innerHTML = `
@@ -313,7 +315,8 @@ function showManualEntryForm(isbn = "") {
       <input id="m-author" type="text"><br><br>
 
       ヨミ：<br>
-      <input id="m-yomi" type="text"><br>
+      <input id="m-yomi" type="text"
+             oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9]/g, '');"><br>
       <button onclick="autoManualYomi()">ヨミ自動生成</button><br><br>
 
       <button onclick="manualSave()">登録する</button>
@@ -370,7 +373,7 @@ function showInitial() {
   document.getElementById("start-btn").onclick = showCamera;
   document.getElementById("manual-btn").onclick = showManualEntryForm;
 
-  renderBookList(currentSort, currentGroup);
+  renderBookList("yomi", currentGroup);
 }
 
 /* -----------------------------------
