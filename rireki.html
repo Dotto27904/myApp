@@ -2,9 +2,10 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート12</title>
+  <title>読書ノート13</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <style>
     .tab-button {
       padding: 10px 15px;
@@ -17,27 +18,31 @@
     .tab-button:hover {
       background-color: #e0e0e0;
     }
+    .field-label {
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 90%;
+      padding: 4px;
+      margin-top: 4px;
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- 戻るボタン（ページ上部） -->
-  <div style="text-align:left; margin:10px;">
-    <button onclick="location.href='index.html'"
-            style="padding:10px 20px; font-size:16px;">
-      ← 戻る
-    </button>
-  </div>
+<h2>読書ノート13（ファイル保存＋手動登録版）</h2>
+<p>
+最初に「データファイル選択」ボタンから <strong>books.json</strong> を選んでください。<br>
+以後、読み込み・編集・削除のたびに自動でそのファイルに保存されます。
+</p>
 
-<h2>読書ノート</h2>
-読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
-読み込んだデータは、本のタイトルごとに表示することができます。<br>
-稀にうまく読み込めないことがあるので、その場合は、編集ボタンから入力してください。
-
-<!-- 上段：読み取りボタン or カメラ -->
+<!-- 上段：ファイル選択＋読み取りボタン or カメラ／手動登録フォーム -->
 <div id="top-area" style="margin:20px; text-align:center;">
-  <button id="start-btn" style="padding:10px 20px; font-size:18px;">
+  <button id="file-btn" style="padding:10px 20px; font-size:18px;">
+    データファイル選択
+  </button>
+  <button id="start-btn" style="padding:10px 20px; font-size:18px; margin-left:10px;">
     バーコード読み込み
   </button>
 </div>
@@ -59,7 +64,7 @@
   <button class="tab-button" onclick="renderBookList(currentSort,'その他')">その他</button>
 </div>
 
-<!-- 中段：読み取り終了ボタン -->
+<!-- 中段：読み取り終了ボタンなど -->
 <div id="middle-area" style="margin:20px; text-align:center;"></div>
 
 <!-- 下段：読み込んだ本一覧 -->
@@ -76,201 +81,322 @@ let currentGroup = "ア行";
 let duplicateAlertShown = false;
 let cameraStopped = false;
 let lastCode = "";
-
-// ★★★ 追加：グローバル isProcessing ★★★
 let isProcessing = false;
+
+// ファイル保存用
+let booksData = [];
+let booksFileHandle = null;
 
 /* -----------------------------------
    カタカナ → ひらがな変換
 ----------------------------------- */
 function kataToHira(str) {
-    return str.replace(/[\u30A1-\u30F6]/g, function(match) {
-        const chr = match.charCodeAt(0) - 0x60;
-        return String.fromCharCode(chr);
-    });
+  return str.replace(/[\u30A1-\u30F6]/g, function(match) {
+    const chr = match.charCodeAt(0) - 0x60;
+    return String.fromCharCode(chr);
+  });
 }
 
 /* -----------------------------------
    ヨミ用：ひらがなに統一＋記号除去
 ----------------------------------- */
 function normalizeYomi(str) {
-    if (!str) return "";
-    let t = str;
+  if (!str) return "";
+  let t = str;
 
-    t = kataToHira(t);
-    t = t.replace(/[\uFF65-\uFF9F]/g, s => kataToHira(s.normalize("NFKC")));
-    t = t.replace(/[A-Za-z]/g, s => kataToHira(String.fromCharCode(s.toUpperCase().charCodeAt(0) + 0x60)));
-    t = t.replace(/[0-9]/g, s => ["ぜろ","いち","に","さん","よん","ご","ろく","なな","はち","きゅう"][parseInt(s)]);
-    t = t.replace(/[・。、「」『』（）()\s]/g, "");
+  t = kataToHira(t);
+  t = t.replace(/[\uFF65-\uFF9F]/g, s => kataToHira(s.normalize("NFKC")));
+  t = t.replace(/[A-Za-z]/g, s => kataToHira(String.fromCharCode(s.toUpperCase().charCodeAt(0) + 0x60)));
+  t = t.replace(/[0-9]/g, s => ["ぜろ","いち","に","さん","よん","ご","ろく","なな","はち","きゅう"][parseInt(s)]);
+  t = t.replace(/[・。、「」『』（）()\s]/g, "");
 
-    return t;
+  return t;
 }
 
 /* -----------------------------------
    fallback：タイトルから読みを生成
 ----------------------------------- */
 function fallbackYomi(title) {
-    return normalizeYomi(title);
+  return normalizeYomi(title);
 }
 
 /* -----------------------------------
    OpenBD API
 ----------------------------------- */
 async function fetchBookInfo(isbn) {
-    const url = `https://api.openbd.jp/v1/get?isbn=${isbn}`;
-    const response = await fetch(url);
-    const data = await response.json();
+  const url = `https://api.openbd.jp/v1/get?isbn=${isbn}`;
+  const response = await fetch(url);
+  const data = await response.json();
 
-    if (!data[0]) return null;
+  if (!data[0]) return null;
 
-    const summary = data[0].summary;
-    const title = summary.title || "タイトル不明";
-    const author = summary.author || "著者不明";
+  const summary = data[0].summary;
+  const title = summary.title || "タイトル不明";
+  const author = summary.author || "著者不明";
 
-    let yomi = "";
-    try {
-        yomi = data[0].onix.DescriptiveDetail.TitleDetail.TitleElement.TitleText.collationkey || "";
-    } catch(e) {
-        yomi = "";
-    }
+  let yomi = "";
+  try {
+    yomi = data[0].onix.DescriptiveDetail.TitleDetail.TitleElement.TitleText.collationkey || "";
+  } catch(e) {
+    yomi = "";
+  }
 
-    if (!yomi) yomi = fallbackYomi(title);
-    else yomi = normalizeYomi(yomi);
+  if (!yomi) yomi = fallbackYomi(title);
+  else yomi = normalizeYomi(yomi);
 
-    return { isbn, title, author, yomi };
+  return { isbn, title, author, yomi };
 }
 
 /* -----------------------------------
-   localStorage
+   ファイル読み込み・保存
 ----------------------------------- */
-function getBooks() {
-    return JSON.parse(localStorage.getItem("books") || "[]");
-}
-
-function saveBook(info) {
-    const books = getBooks();
-    books.push(info);
-    localStorage.setItem("books", JSON.stringify(books));
-
-    const group = getGroupFromYomi(info.yomi);
-    currentGroup = group;
-    alert("登録完了");
-
-    renderBookList("title", group);
-}
-
-/* -----------------------------------
-   編集・削除
------------------------------------ */
-function updateBook(index, info) {
-    const books = getBooks();
-    books[index] = info;
-    localStorage.setItem("books", JSON.stringify(books));
+async function selectBooksFile() {
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{
+        description: "JSON file",
+        accept: { "application/json": [".json"] }
+      }],
+      multiple: false
+    });
+    booksFileHandle = handle;
+    await loadBooksFromFile();
+    alert("books.json を読み込みました");
     renderBookList(currentSort, currentGroup);
+  } catch (e) {
+    console.log(e);
+    alert("ファイル選択がキャンセルされました");
+  }
 }
 
-function deleteBook(index) {
-    const books = getBooks();
-    books.splice(index, 1);
-    localStorage.setItem("books", JSON.stringify(books));
-    renderBookList(currentSort, currentGroup);
+async function loadBooksFromFile() {
+  if (!booksFileHandle) return;
+  const file = await booksFileHandle.getFile();
+  const text = await file.text();
+  try {
+    booksData = JSON.parse(text);
+  } catch (e) {
+    booksData = [];
+  }
+}
+
+async function saveBooksToFile() {
+  if (!booksFileHandle) {
+    alert("books.json が選択されていません");
+    return;
+  }
+  try {
+    const writable = await booksFileHandle.createWritable();
+    await writable.write(JSON.stringify(booksData, null, 2));
+    await writable.close();
+  } catch (e) {
+    console.log(e);
+    alert("ファイル保存に失敗しました");
+  }
 }
 
 /* -----------------------------------
    重複チェック
 ----------------------------------- */
 function isDuplicate(info) {
-    return getBooks().some(book => book.isbn === info.isbn);
+  return booksData.some(book => book.isbn === info.isbn);
 }
 
 /* -----------------------------------
    行判定
 ----------------------------------- */
 function normalizeFirstKana(ch) {
-    const map = {
-        "が":"か","ぎ":"き","ぐ":"く","げ":"け","ご":"こ",
-        "ざ":"さ","じ":"し","ず":"す","ぜ":"せ","ぞ":"そ",
-        "だ":"た","ぢ":"ち","づ":"つ","で":"て","ど":"と",
-        "ば":"は","び":"ひ","ぶ":"ふ","べ":"へ","ぼ":"ほ",
-        "ぱ":"は","ぴ":"ひ","ぷ":"ふ","ぺ":"へ","ぽ":"ほ",
-        "ぁ":"あ","ぃ":"い","ぅ":"う","ぇ":"え","ぉ":"お",
-        "ゃ":"や","ゅ":"ゆ","ょ":"よ","っ":"つ"
-    };
-    return map[ch] || ch;
+  const map = {
+    "が":"か","ぎ":"き","ぐ":"く","げ":"け","ご":"こ",
+    "ざ":"さ","じ":"し","ず":"す","ぜ":"せ","ぞ":"そ",
+    "だ":"た","ぢ":"ち","づ":"つ","で":"て","ど":"と",
+    "ば":"は","び":"ひ","ぶ":"ふ","べ":"へ","ぼ":"ほ",
+    "ぱ":"は","ぴ":"ひ","ぷ":"ふ","ぺ":"へ","ぽ":"ほ",
+    "ぁ":"あ","ぃ":"い","ぅ":"う","ぇ":"え","ぉ":"お",
+    "ゃ":"や","ゅ":"ゆ","ょ":"よ","っ":"つ"
+  };
+  return map[ch] || ch;
 }
 
 function getGroupFromYomi(yomi) {
-    if (!yomi) return "その他";
-    const first = normalizeFirstKana(yomi.charAt(0));
+  if (!yomi) return "その他";
+  const first = normalizeFirstKana(yomi.charAt(0));
 
-    if ("あいうえお".includes(first)) return "ア行";
-    if ("かきくけこ".includes(first)) return "カ行";
-    if ("さしすせそ".includes(first)) return "サ行";
-    if ("たちつてと".includes(first)) return "タ行";
-    if ("なにぬねの".includes(first)) return "ナ行";
-    if ("はひふへほ".includes(first)) return "ハ行";
-    if ("まみむめも".includes(first)) return "マ行";
-    if ("やゆよ".includes(first)) return "ヤ行";
-    if ("らりるれろ".includes(first)) return "ラ行";
-    if ("わをん".includes(first)) return "ワ行";
+  if ("あいうえお".includes(first)) return "ア行";
+  if ("かきくけこ".includes(first)) return "カ行";
+  if ("さしすせそ".includes(first)) return "サ行";
+  if ("たちつてと".includes(first)) return "タ行";
+  if ("なにぬねの".includes(first)) return "ナ行";
+  if ("はひふへほ".includes(first)) return "ハ行";
+  if ("まみむめも".includes(first)) return "マ行";
+  if ("やゆよ".includes(first)) return "ヤ行";
+  if ("らりるれろ".includes(first)) return "ラ行";
+  if ("わをん".includes(first)) return "ワ行";
 
-    return "その他";
+  return "その他";
 }
 
 /* -----------------------------------
    一覧表示
 ----------------------------------- */
 function renderBookList(sortType = "title", group = null) {
-    currentSort = sortType;
+  currentSort = sortType;
 
-    if (group !== null && group !== undefined) {
-        currentGroup = group;
-    }
+  if (group !== null && group !== undefined) {
+    currentGroup = group;
+  }
 
-    const allBooks = getBooks();
-    let books = [...allBooks];
+  const allBooks = booksData;
+  let books = [...allBooks];
 
-    books.sort((a, b) => a[sortType].localeCompare(b[sortType]));
-    books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
+  books.sort((a, b) => (a[sortType] || "").localeCompare(b[sortType] || ""));
+  books = books.filter(book => getGroupFromYomi(book.yomi) === currentGroup);
 
-    const list = document.getElementById("book-list");
-    list.innerHTML = "";
+  const list = document.getElementById("book-list");
+  list.innerHTML = "";
 
-    books.forEach((book) => {
-        const originalIndex = allBooks.findIndex(b => b.isbn === book.isbn);
+  books.forEach((book, idx) => {
+    const div = document.createElement("div");
+    div.style.margin = "8px 0";
+    div.style.padding = "8px";
+    div.style.border = "1px solid #ccc";
 
-        const div = document.createElement("div");
-        div.style.margin = "8px 0";
-        div.style.padding = "8px";
-        div.style.border = "1px solid #ccc";
+    div.innerHTML = `
+      <strong>${book.title}</strong><br>
+      著者：${book.author}<br>
+      ヨミ：${book.yomi}<br>
+      ISBN：${book.isbn}<br>
+      <button onclick="editBook(${idx})">編集</button>
+      <button onclick="deleteBook(${idx})">削除</button>
+    `;
 
-        div.innerHTML = `
-            <strong>${book.title}</strong><br>
-            著者：${book.author}<br>
-            ヨミ：${book.yomi}<br>
-            ISBN：${book.isbn}<br>
-            <button onclick="editBook(${originalIndex})">編集</button>
-            <button onclick="deleteBook(${originalIndex})">削除</button>
-        `;
+    list.appendChild(div);
+  });
+}
 
-        list.appendChild(div);
-    });
+/* -----------------------------------
+   編集・削除
+----------------------------------- */
+function editBook(index) {
+  const book = booksData[index];
+  document.getElementById("top-area").innerHTML = `
+    <div style="padding:20px;">
+      <h3>編集</h3>
+      <span class="field-label">タイトル：</span><br>
+      <input id="e-title" type="text" value="${book.title}"><br><br>
+
+      <span class="field-label">著者：</span><br>
+      <input id="e-author" type="text" value="${book.author}"><br><br>
+
+      <span class="field-label">ヨミ：</span><br>
+      <input id="e-yomi" type="text" value="${book.yomi}"><br>
+      <button onclick="autoEditYomi()">ヨミ自動生成</button><br><br>
+
+      <span class="field-label">ISBN：</span><br>
+      <input id="e-isbn" type="text" value="${book.isbn}" readonly><br><br>
+
+      <button onclick="applyEdit(${index})">保存</button>
+      <button onclick="showInitial()">キャンセル</button>
+    </div>
+  `;
+}
+
+function autoEditYomi() {
+  const title = document.getElementById("e-title").value;
+  document.getElementById("e-yomi").value = fallbackYomi(title);
+}
+
+async function applyEdit(index) {
+  booksData[index] = {
+    title: document.getElementById("e-title").value,
+    author: document.getElementById("e-author").value,
+    yomi: document.getElementById("e-yomi").value,
+    isbn: document.getElementById("e-isbn").value
+  };
+  await saveBooksToFile();
+  showInitial();
+}
+
+async function deleteBook(index) {
+  if (!confirm("この本を削除しますか？")) return;
+  booksData.splice(index, 1);
+  await saveBooksToFile();
+  renderBookList(currentSort, currentGroup);
+}
+
+/* -----------------------------------
+   手動登録フォーム
+----------------------------------- */
+function showManualEntryForm(isbn) {
+  document.getElementById("top-area").innerHTML = `
+    <div style="padding:20px;">
+      <h3>手動登録</h3>
+      <span class="field-label">タイトル：</span><br>
+      <input id="m-title" type="text"><br><br>
+
+      <span class="field-label">著者：</span><br>
+      <input id="m-author" type="text"><br><br>
+
+      <span class="field-label">ヨミ：</span><br>
+      <input id="m-yomi" type="text"><br>
+      <button onclick="autoYomi()">ヨミ自動生成</button><br><br>
+
+      <span class="field-label">ISBN：</span><br>
+      <input id="m-isbn" type="text" value="${isbn}" readonly><br><br>
+
+      <button onclick="manualSave()">登録する</button>
+      <button onclick="showInitial()">キャンセル</button>
+    </div>
+  `;
+}
+
+function autoYomi() {
+  const title = document.getElementById("m-title").value;
+  document.getElementById("m-yomi").value = fallbackYomi(title);
+}
+
+async function manualSave() {
+  const info = {
+    title: document.getElementById("m-title").value,
+    author: document.getElementById("m-author").value,
+    yomi: document.getElementById("m-yomi").value,
+    isbn: document.getElementById("m-isbn").value
+  };
+
+  if (!info.title || !info.yomi || !info.isbn) {
+    alert("タイトル・ヨミ・ISBN は必須です");
+    return;
+  }
+
+  if (isDuplicate(info)) {
+    alert("この本はすでに登録されています");
+    showInitial();
+    return;
+  }
+
+  booksData.push(info);
+  await saveBooksToFile();
+  alert("登録しました");
+  showInitial();
 }
 
 /* -----------------------------------
    初期状態
 ----------------------------------- */
 function showInitial() {
-
   duplicateAlertShown = false;
 
   document.getElementById("top-area").innerHTML = `
-    <button id="start-btn" style="padding:10px 20px; font-size:18px;">
+    <button id="file-btn" style="padding:10px 20px; font-size:18px;">
+      データファイル選択
+    </button>
+    <button id="start-btn" style="padding:10px 20px; font-size:18px; margin-left:10px;">
       バーコード読み込み
     </button>
   `;
   document.getElementById("middle-area").innerHTML = "";
 
+  document.getElementById("file-btn").onclick = selectBooksFile;
   document.getElementById("start-btn").onclick = showCamera;
 
   renderBookList(currentSort, currentGroup);
@@ -280,14 +406,14 @@ function showInitial() {
    読み取り状態
 ----------------------------------- */
 function showCamera() {
+  if (!booksFileHandle) {
+    alert("先に『データファイル選択』から books.json を選んでください");
+    return;
+  }
 
   duplicateAlertShown = false;
   cameraStopped = false;
-
-  // ★★★ 読み取り状態を完全リセット ★★★
   isProcessing = false;
-
-  // ★★★ 前回のコードをリセット ★★★
   lastCode = "";
 
   document.getElementById("top-area").innerHTML = `
@@ -305,86 +431,80 @@ function showCamera() {
   let lastScanTime = 0;
 
   Quagga.init({
-      inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: document.querySelector('#camera'),
-          constraints: { facingMode: "environment" }
-      },
-      decoder: { readers: ["ean_reader"] }
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.querySelector('#camera'),
+      constraints: { facingMode: "environment" }
+    },
+    decoder: { readers: ["ean_reader"] }
   }, function(err) {
-      if (err) { console.log(err); return; }
-      Quagga.start();
+    if (err) { console.log(err); return; }
+    Quagga.start();
   });
 
   Quagga.onDetected(async function(data) {
+    if (cameraStopped) return;
 
-      if (cameraStopped) return;
+    const now = Date.now();
+    const code = data.codeResult.code;
 
-      const now = Date.now();
-      const code = data.codeResult.code;
+    if (!code.startsWith("978") && !code.startsWith("979")) {
+      return;
+    }
 
-      // ★★★ ISBN（978/979）以外は捨てる ★★★
-      if (!code.startsWith("978") && !code.startsWith("979")) {
-          return;
+    if (code === lastCode && now - lastScanTime < 3000) return;
+
+    lastCode = code;
+    lastScanTime = now;
+
+    if (isProcessing) return;
+    isProcessing = true;
+
+    const isbn = code;
+    const info = await fetchBookInfo(isbn);
+
+    if (!info) {
+      alert("書誌データがありません（OpenBDに情報がありません）\n手動で登録できます。");
+      cameraStopped = true;
+      Quagga.stop();
+      showManualEntryForm(isbn);
+      isProcessing = false;
+      return;
+    }
+
+    if (isDuplicate(info)) {
+      if (!duplicateAlertShown) {
+        alert("この本はすでに登録されています");
+        duplicateAlertShown = true;
       }
-
-      if (code === lastCode && now - lastScanTime < 3000) return;
-
-      lastCode = code;
-      lastScanTime = now;
-
-      if (isProcessing) return;
-      isProcessing = true;
-
-      const isbn = code;
-
-      const info = await fetchBookInfo(isbn);
-
-      if (!info) {
-          alert("書誌データがありません（OpenBDに情報がありません）");
-
-          cameraStopped = true;
-          Quagga.stop();
-          showInitial();
-
-          isProcessing = false;
-          return;
-      }
-
-      if (isDuplicate(info)) {
-          if (!duplicateAlertShown) {
-              alert("この本はすでに登録されています");
-              duplicateAlertShown = true;
-          }
-          cameraStopped = true;
-          Quagga.stop();
-          showInitial();
-          isProcessing = false;
-          return;
-      }
-
-      const ok = confirm(
-          `タイトル：${info.title}\n著者：${info.author}\n\n取り込みますか？`
-      );
-
-      if (ok) {
-          saveBook(info);
-          cameraStopped = true;
-          Quagga.stop();
-          isProcessing = false;
-
-          showInitial();
-          return;
-      }
-
-      duplicateAlertShown = false;
-
       cameraStopped = true;
       Quagga.stop();
       showInitial();
-
       isProcessing = false;
+      return;
+    }
+
+    const ok = confirm(
+      `タイトル：${info.title}\n著者：${info.author}\n\n取り込みますか？`
+    );
+
+    if (ok) {
+      booksData.push(info);
+      await saveBooksToFile();
+      alert("登録完了");
+      cameraStopped = true;
+      Quagga.stop();
+      isProcessing = false;
+      showInitial();
+      return;
+    }
+
+    duplicateAlertShown = false;
+    cameraStopped = true;
+    Quagga.stop();
+    showInitial();
+    isProcessing = false;
   });
 }
 
