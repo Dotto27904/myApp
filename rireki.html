@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート12.9（最新版）</title>
+  <title>読書ノート12.10（最新版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -35,7 +35,7 @@
     </button>
   </div>
 
-<h2>読書ノート12.9（最新版）</h2>
+<h2>読書ノート12.10（最新版）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
@@ -466,9 +466,12 @@ function showCamera() {
     );
 
     if (ok) {
+      // 取り込みを実行
       saveBook(info);
 
       const group = getGroupFromYomi(info.yomi);
+
+      // ★ 新規登録した本をその時だけ一番上に表示
       renderBookList("yomi", group, info.isbn);
 
       alert("登録しました");
@@ -477,6 +480,7 @@ function showCamera() {
       Quagga.stop();
       isProcessing = false;
 
+      // 上部ボタンだけ元に戻す（一覧はそのまま）
       document.getElementById("top-area").innerHTML = `
         <button id="start-btn" style="padding:10px 20px; font-size:18px;">
           バーコード読み込み
@@ -492,6 +496,7 @@ function showCamera() {
       return;
     }
 
+    // キャンセルした場合
     cameraStopped = true;
     Quagga.stop();
     showInitial();
