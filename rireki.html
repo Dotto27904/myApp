@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート12.11（最新版）</title>
+  <title>読書ノート12.12（最新版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -35,20 +35,13 @@
     </button>
   </div>
 
-<h2>読書ノート12.11（最新版）</h2>
+<h2>読書ノート12.12（最新版）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
 
 <!-- 上段：読み取りボタン＋手動登録ボタン -->
-<div id="top-area" style="margin:20px; text-align:center;">
-  <button id="start-btn" style="padding:10px 20px; font-size:18px;">
-    バーコード読み込み
-  </button>
-  <button id="manual-btn" style="padding:10px 20px; font-size:18px; margin-left:10px;">
-    手動登録
-  </button>
-</div>
+<div id="top-area" style="margin:20px; text-align:center;"></div>
 
 <h3>タイトル別</h3>
 
@@ -85,6 +78,27 @@ let duplicateAlertShown = false;
 let cameraStopped = false;
 let lastCode = "";
 let isProcessing = false;
+
+/* -----------------------------------
+   初期ボタン描画（安全版）
+----------------------------------- */
+function drawTopButtons() {
+  const top = document.getElementById("top-area");
+  top.innerHTML = "";
+
+  const btn1 = document.createElement("button");
+  btn1.textContent = "バーコード読み込み";
+  btn1.style = "padding:10px 20px; font-size:18px;";
+  btn1.onclick = showCamera;
+
+  const btn2 = document.createElement("button");
+  btn2.textContent = "手動登録";
+  btn2.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
+  btn2.onclick = () => showManualEntryForm();
+
+  top.appendChild(btn1);
+  top.appendChild(btn2);
+}
 
 /* -----------------------------------
    カタカナ → ひらがな変換
@@ -167,7 +181,7 @@ function deleteBook(index) {
 }
 
 /* -----------------------------------
-   重複チェック（ISBN空欄は重複扱いしない）
+   重複チェック
 ----------------------------------- */
 function isDuplicate(info) {
   if (!info.isbn) return false;
@@ -210,7 +224,7 @@ function getGroupFromYomi(yomi) {
 }
 
 /* -----------------------------------
-   一覧表示（yomiソート＋新規登録を先頭に）
+   一覧表示
 ----------------------------------- */
 function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
   currentSort = sortType;
@@ -260,27 +274,33 @@ function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
 function editBook(index) {
   const book = getBooks()[index];
 
-  document.getElementById("top-area").innerHTML = `
-    <div style="padding:20px;">
-      <h3>編集</h3>
+  const top = document.getElementById("top-area");
+  top.innerHTML = "";
 
-      ISBN：<br>
-      <input id="e-isbn" value="${book.isbn}" readonly><br><br>
+  const wrap = document.createElement("div");
+  wrap.style = "padding:20px;";
 
-      タイトル：<br>
-      <input id="e-title" value="${book.title}"><br><br>
+  wrap.innerHTML = `
+    <h3>編集</h3>
 
-      著者：<br>
-      <input id="e-author" value="${book.author}"><br><br>
+    ISBN：<br>
+    <input id="e-isbn" value="${book.isbn}" readonly><br><br>
 
-      よみ：<br>
-      <input id="e-yomi" value="${book.yomi}"
-             oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
+    タイトル：<br>
+    <input id="e-title" value="${book.title}"><br><br>
 
-      <button onclick="applyEdit(${index})">保存</button>
-      <button onclick="showInitial()">キャンセル</button>
-    </div>
+    著者：<br>
+    <input id="e-author" value="${book.author}"><br><br>
+
+    よみ：<br>
+    <input id="e-yomi" value="${book.yomi}"
+           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
+
+    <button onclick="applyEdit(${index})">保存</button>
+    <button onclick="drawTopButtons()">キャンセル</button>
   `;
+
+  top.appendChild(wrap);
 }
 
 function applyEdit(index) {
@@ -293,34 +313,40 @@ function applyEdit(index) {
 
   updateBook(index, info);
   alert("更新しました");
-  showInitial();
+  drawTopButtons();
 }
 
 /* -----------------------------------
-   手動登録フォーム（ISBN空欄OK）
+   手動登録フォーム
 ----------------------------------- */
 function showManualEntryForm() {
-  document.getElementById("top-area").innerHTML = `
-    <div style="padding:20px;">
-      <h3>手動登録</h3>
+  const top = document.getElementById("top-area");
+  top.innerHTML = "";
 
-      ISBN：<br>
-      <input id="m-isbn" type="text" value=""><br><br>
+  const wrap = document.createElement("div");
+  wrap.style = "padding:20px;";
 
-      タイトル：<br>
-      <input id="m-title" type="text"><br><br>
+  wrap.innerHTML = `
+    <h3>手動登録</h3>
 
-      著者：<br>
-      <input id="m-author" type="text"><br><br>
+    ISBN：<br>
+    <input id="m-isbn" type="text" value=""><br><br>
 
-      よみ：<br>
-      <input id="m-yomi" type="text"
-             oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
+    タイトル：<br>
+    <input id="m-title" type="text"><br><br>
 
-      <button onclick="manualSave()">登録する</button>
-      <button onclick="showInitial()">キャンセル</button>
-    </div>
+    著者：<br>
+    <input id="m-author" type="text"><br><br>
+
+    よみ：<br>
+    <input id="m-yomi" type="text"
+           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
+
+    <button onclick="manualSave()">登録する</button>
+    <button onclick="drawTopButtons()">キャンセル</button>
   `;
+
+  top.appendChild(wrap);
 }
 
 function manualSave() {
@@ -338,7 +364,7 @@ function manualSave() {
 
   if (isDuplicate(info)) {
     alert("この本はすでに登録されています");
-    showInitial();
+    drawTopButtons();
     return;
   }
 
@@ -349,41 +375,12 @@ function manualSave() {
 
   alert("登録しました");
 
-  document.getElementById("top-area").innerHTML = `
-    <button id="start-btn" style="padding:10px 20px; font-size:18px;">
-      バーコード読み込み
-    </button>
-    <button id="manual-btn" style="padding:10px 20px; font-size:18px; margin-left:10px;">
-      手動登録
-    </button>
-  `;
+  drawTopButtons();
   document.getElementById("middle-area").innerHTML = "";
-  document.getElementById("start-btn").onclick = showCamera;
-  document.getElementById("manual-btn").onclick = () => showManualEntryForm();
 }
 
 /* -----------------------------------
-   初期状態（一覧は描画しない）
------------------------------------ */
-function showInitial() {
-  duplicateAlertShown = false;
-
-  document.getElementById("top-area").innerHTML = `
-    <button id="start-btn" style="padding:10px 20px; font-size:18px;">
-      バーコード読み込み
-    </button>
-    <button id="manual-btn" style="padding:10px 20px; font-size:18px; margin-left:10px;">
-      手動登録
-    </button>
-  `;
-  document.getElementById("middle-area").innerHTML = "";
-
-  document.getElementById("start-btn").onclick = showCamera;
-  document.getElementById("manual-btn").onclick = () => showManualEntryForm();
-}
-
-/* -----------------------------------
-   読み取り状態
+   読み取り状態（カメラ）
 ----------------------------------- */
 function showCamera() {
   duplicateAlertShown = false;
@@ -391,17 +388,22 @@ function showCamera() {
   isProcessing = false;
   lastCode = "";
 
-  document.getElementById("top-area").innerHTML = `
-    <div id="camera" style="width:100%; max-width:400px; margin:auto;"></div>
-  `;
+  // ★ top-area を安全に書き換え（innerHTML 直接書換え禁止）
+  const top = document.getElementById("top-area");
+  top.innerHTML = "";
+  const camDiv = document.createElement("div");
+  camDiv.id = "camera";
+  camDiv.style = "width:100%; max-width:400px; margin:auto;";
+  top.appendChild(camDiv);
 
-  document.getElementById("middle-area").innerHTML = `
-    <button id="stop-btn" style="padding:10px 20px; font-size:18px;">
-      読み取りを終わる
-    </button>
-  `;
-
-  document.getElementById("stop-btn").onclick = stopCamera;
+  // middle-area（停止ボタン）
+  const mid = document.getElementById("middle-area");
+  mid.innerHTML = "";
+  const stopBtn = document.createElement("button");
+  stopBtn.textContent = "読み取りを終わる";
+  stopBtn.style = "padding:10px 20px; font-size:18px;";
+  stopBtn.onclick = stopCamera;
+  mid.appendChild(stopBtn);
 
   let lastScanTime = 0;
 
@@ -424,8 +426,10 @@ function showCamera() {
     const now = Date.now();
     const code = data.codeResult.code;
 
+    // ISBN 978/979 のみ
     if (!code.startsWith("978") && !code.startsWith("979")) return;
 
+    // 連続読み取り防止
     if (code === lastCode && now - lastScanTime < 3000) return;
 
     lastCode = code;
@@ -456,7 +460,7 @@ function showCamera() {
       }
       cameraStopped = true;
       Quagga.stop();
-      showInitial();
+      drawTopButtons();
       isProcessing = false;
       return;
     }
@@ -479,28 +483,37 @@ function showCamera() {
       Quagga.stop();
       isProcessing = false;
 
-      // ★ 上部ボタンだけ元に戻す（一覧はそのまま保持）
-      document.getElementById("top-area").innerHTML = `
-        <button id="start-btn" style="padding:10px 20px; font-size:18px;">
-          バーコード読み込み
-        </button>
-        <button id="manual-btn" style="padding:10px 20px; font-size:18px; margin-left:10px;">
-          手動登録
-        </button>
-      `;
+      // ★ top-area を安全に再描画（一覧は消さない）
+      drawTopButtons();
       document.getElementById("middle-area").innerHTML = "";
-      document.getElementById("start-btn").onclick = showCamera;
-      document.getElementById("manual-btn").onclick = () => showManualEntryForm();
 
       return;
     }
 
-    // キャンセルした場合
+    // キャンセル時
     cameraStopped = true;
     Quagga.stop();
-    showInitial();
+    drawTopButtons();
     isProcessing = false;
   });
 }
 
+/* -----------------------------------
+   カメラ停止
+----------------------------------- */
+function stopCamera() {
+  cameraStopped = true;
+  Quagga.stop();
+  const cam = document.querySelector('#camera');
+  if (cam) cam.innerHTML = "";
+  drawTopButtons();
+}
 
+/* -----------------------------------
+   初期表示
+----------------------------------- */
+drawTopButtons();
+</script>
+
+</body>
+</html>
