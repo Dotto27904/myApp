@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート12.12（最新版）</title>
+  <title>読書ノート12.13（最新版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -27,15 +27,14 @@
 
 <body>
 
-  <!-- 戻るボタン -->
-  <div style="text-align:left; margin:10px;">
-    <button onclick="location.href='index.html'"
-            style="padding:10px 20px; font-size:16px;">
-      ← 戻る
-    </button>
-  </div>
+<div style="text-align:left; margin:10px;">
+  <button onclick="location.href='index.html'"
+          style="padding:10px 20px; font-size:16px;">
+    ← 戻る
+  </button>
+</div>
 
-<h2>読書ノート12.12（最新版）</h2>
+<h2>読書ノート12.13（最新版）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
@@ -224,7 +223,7 @@ function getGroupFromYomi(yomi) {
 }
 
 /* -----------------------------------
-   一覧表示
+   一覧表示（新規登録時は topIsbn を先頭に）
 ----------------------------------- */
 function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
   currentSort = sortType;
@@ -267,55 +266,6 @@ function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
     list.appendChild(div);
   });
 }
-
-/* -----------------------------------
-   編集画面
------------------------------------ */
-function editBook(index) {
-  const book = getBooks()[index];
-
-  const top = document.getElementById("top-area");
-  top.innerHTML = "";
-
-  const wrap = document.createElement("div");
-  wrap.style = "padding:20px;";
-
-  wrap.innerHTML = `
-    <h3>編集</h3>
-
-    ISBN：<br>
-    <input id="e-isbn" value="${book.isbn}" readonly><br><br>
-
-    タイトル：<br>
-    <input id="e-title" value="${book.title}"><br><br>
-
-    著者：<br>
-    <input id="e-author" value="${book.author}"><br><br>
-
-    よみ：<br>
-    <input id="e-yomi" value="${book.yomi}"
-           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
-
-    <button onclick="applyEdit(${index})">保存</button>
-    <button onclick="drawTopButtons()">キャンセル</button>
-  `;
-
-  top.appendChild(wrap);
-}
-
-function applyEdit(index) {
-  const info = {
-    isbn: document.getElementById("e-isbn").value,
-    title: document.getElementById("e-title").value,
-    author: document.getElementById("e-author").value,
-    yomi: document.getElementById("e-yomi").value
-  };
-
-  updateBook(index, info);
-  alert("更新しました");
-  drawTopButtons();
-}
-
 /* -----------------------------------
    手動登録フォーム
 ----------------------------------- */
@@ -349,6 +299,9 @@ function showManualEntryForm() {
   top.appendChild(wrap);
 }
 
+/* -----------------------------------
+   手動登録（ISBN 空欄でも一番上に来る）
+----------------------------------- */
 function manualSave() {
   const info = {
     isbn: document.getElementById("m-isbn").value,
@@ -362,6 +315,11 @@ function manualSave() {
     return;
   }
 
+  // ★ ISBN が空欄なら内部IDを付与する（これが今回の決定打）
+  if (!info.isbn) {
+    info.isbn = "temp_" + Date.now();
+  }
+
   if (isDuplicate(info)) {
     alert("この本はすでに登録されています");
     drawTopButtons();
@@ -371,11 +329,14 @@ function manualSave() {
   saveBook(info);
 
   const group = getGroupFromYomi(info.yomi);
-  renderBookList("yomi", group, info.isbn || null);
+
+  // ★ 必ず info.isbn が存在するので一番上に来る
+  renderBookList("yomi", group, info.isbn);
 
   alert("登録しました");
 
-  drawTopButtons();
+  // ★ DOM 安定後にボタンを描画（並び順が消えない）
+  setTimeout(drawTopButtons, 10);
   document.getElementById("middle-area").innerHTML = "";
 }
 
@@ -388,7 +349,6 @@ function showCamera() {
   isProcessing = false;
   lastCode = "";
 
-  // ★ top-area を安全に書き換え（innerHTML 直接書換え禁止）
   const top = document.getElementById("top-area");
   top.innerHTML = "";
   const camDiv = document.createElement("div");
@@ -396,7 +356,6 @@ function showCamera() {
   camDiv.style = "width:100%; max-width:400px; margin:auto;";
   top.appendChild(camDiv);
 
-  // middle-area（停止ボタン）
   const mid = document.getElementById("middle-area");
   mid.innerHTML = "";
   const stopBtn = document.createElement("button");
@@ -426,10 +385,8 @@ function showCamera() {
     const now = Date.now();
     const code = data.codeResult.code;
 
-    // ISBN 978/979 のみ
     if (!code.startsWith("978") && !code.startsWith("979")) return;
 
-    // 連続読み取り防止
     if (code === lastCode && now - lastScanTime < 3000) return;
 
     lastCode = code;
@@ -483,14 +440,13 @@ function showCamera() {
       Quagga.stop();
       isProcessing = false;
 
-      // ★ top-area を安全に再描画（一覧は消さない）
-      drawTopButtons();
+      // ★ DOM 安定後にボタン描画（並び順が消えない）
+      setTimeout(drawTopButtons, 10);
       document.getElementById("middle-area").innerHTML = "";
 
       return;
     }
 
-    // キャンセル時
     cameraStopped = true;
     Quagga.stop();
     drawTopButtons();
