@@ -19,21 +19,26 @@
     </button>
   </div>
 
+　<h2>館内地図</h2>
+　お探しの本のジャンルに最も近いボタンを押してください。
+
+    <div id="buttons">
+	<button onclick="highlight('zassi.png')">雑誌</button>
+        <button onclick="highlight('seikatu.png')">生活情報（旅行・健康・園芸・文化）</button>
+        <button onclick="highlight('kazoku.png')">家族応援（料理・ファッション・育児）</button>
+        <button onclick="highlight('zidou.png')">児童室（絵本）</button>
+        <button onclick="highlight('YA.png')">ＹＡ（進学・ライトノベル）</button>
+        <button onclick="highlight('bizinesu.png')">ビジネス（パソコン・政治経済・お金）</button>
+        <button onclick="highlight('bunnko.png')">文庫（小説等）</button>
+        <button onclick="highlight('ippann.png')">一般（上記以外）</button>
+    </div>
+
+
     <div id="map-container">
         <img id="map" src="map_1F.png" alt="地図">
         <img id="highlight" src="" alt="ハイライト" class="hidden">
     </div>
 
-    <div id="buttons">
-	<button onclick="highlight('zassi.png')">雑誌</button>
-        <button onclick="highlight('seikatu.png')">生活情報</button>
-        <button onclick="highlight('kazoku.png')">家族応援</button>
-        <button onclick="highlight('zidou.png')">児童室</button>
-        <button onclick="highlight('YA.png')">ＹＡ</button>
-        <button onclick="highlight('bizinesu.png')">ビジネス</button>
-        <button onclick="highlight('bunnko.png')">文庫</button>
-        <button onclick="highlight('ippann.png')">一般</button>
-    </div>
 
     <script src="js/app.js"></script>
 
