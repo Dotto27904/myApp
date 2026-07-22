@@ -37,4 +37,17 @@ function highlight(fileName) {
     // ハイライトを表示
     highlight.src = fileName;
     highlight.classList.remove("hidden");
+
+    // ★ ボタンの選択状態を更新する処理 ★
+    const buttons = document.querySelectorAll("#buttons button");
+
+    // 全ボタンの active を外す
+    buttons.forEach(btn => btn.classList.remove("active"));
+
+    // 押されたボタンだけ active を付ける
+    const clickedButton = [...buttons].find(btn => btn.getAttribute("onclick").includes(fileName));
+    if (clickedButton) {
+        clickedButton.classList.add("active");
+    }
 }
+
