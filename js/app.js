@@ -6,7 +6,7 @@ const genreFloor = {
     "zidou.png": 1,
     "YA.png": 2,
     "bizinesu.png": 2,
-    "bunnko.png": 2,,
+    "bunnko.png": 2,
     "ippann.png": 2,
 };
 
