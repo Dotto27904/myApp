@@ -1,20 +1,13 @@
 // ジャンルごとの階を定義（1F or 2F）
 const genreFloor = {
-    "PC.png": 2,
-    "YA.png": 2,
-    "enngei.png": 1,
-    "kazi.png": 1,
-    "kennkou.png": 1,
     "zassi.png": 1,
-    "sizenn.png": 2,
-    "syakai.png": 2,
-    "syuukyou.png": 2,
-    "zinnsei.png": 1,
-    "bunngaku.png": 2,
-    "bunnko.png": 2,
-    "ryokou.png": 1,
-    "ryouri.png": 1,
-    "rekisi.png": 2
+    "seikatu.png": 1,
+    "kazoku.png": 1,
+    "zidou.png": 1,
+    "YA.png": 2,
+    "bizinesu.png": 2,
+    "bunnko.png": 2,,
+    "ippann.png": 2,
 };
 
 // 1F / 2F の地図を切り替える
