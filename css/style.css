@@ -4,8 +4,9 @@ body {
     padding: 0;
     background-color: #ffffff;
     font-family: sans-serif;
-    text-align: center;
+    text-align: left;   /* ← 左揃え */
 }
+
 
 /* 地図を中央に配置するエリア */
 #map-container {
@@ -56,4 +57,10 @@ body {
 /* ボタンを押したときの反応 */
 #buttons button:active {
     background-color: #d0d0d0;
+}
+
+#buttons button.active {
+  background-color: #4da3ff;
+  color: white;
+  border-color: #1e7fe5;
 }
