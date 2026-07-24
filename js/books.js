@@ -389,19 +389,24 @@ function drawTopButtons() {
 }
 
 /* -----------------------------------
-   バックアップ保存
+   バックアップ保存（Safari警告なし版）
 ----------------------------------- */
 function saveBackup() {
   const books = getBooks();
   const json = JSON.stringify(books);
-  const url = "data:application/json;charset=utf-8," + encodeURIComponent(json);
+  const blob = new Blob([json], { type: "application/json" });
+  const reader = new FileReader();
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "Books_backup.json";
-  a.click();
+  reader.onload = function () {
+    const a = document.createElement("a");
+    a.href = reader.result;  // Base64 データURL
+    a.download = "Books_backup.json";
+    a.click();
+  };
 
-  alert("バックアップを保存しました（警告なし）");
+  reader.readAsDataURL(blob);
+
+  alert("バックアップを保存しました");
 }
 
 /* -----------------------------------
