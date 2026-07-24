@@ -34,6 +34,19 @@
   </button>
 </div>
 
+<!-- バックアップ機能 -->
+<div style="margin:20px; text-align:center;">
+  <h3>バックアップ</h3>
+
+  <button onclick="saveBackup()" style="padding:10px 20px; font-size:18px;">
+    バックアップ保存
+  </button>
+
+  <br><br>
+
+  <input type="file" onchange="restoreBackup(this.files[0])">
+</div>
+
 <h2>読書ノート</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
