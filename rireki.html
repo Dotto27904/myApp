@@ -1,51 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>読書ノート</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <style>
-    .tab-button {
-      padding: 10px 15px;
-      margin: 4px;
-      font-size: 18px;
-      border-radius: 8px;
-      border: 1px solid #666;
-      background-color: #f0f0f0;
-    }
-    .tab-button:hover {
-      background-color: #e0e0e0;
-    }
-    input[type="text"] {
-      width: 90%;
-      padding: 4px;
-      margin-top: 4px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>読書ノート</title>
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-
-<div style="text-align:left; margin:10px;">
-  <button onclick="location.href='index.html'"
-          style="padding:10px 20px; font-size:16px;">
-    ← 戻る
-  </button>
-</div>
-
-<!-- バックアップ機能 -->
-<div style="margin:20px; text-align:center;">
-  <h3>バックアップ</h3>
-
-  <button onclick="saveBackup()" style="padding:10px 20px; font-size:18px;">
-    バックアップ保存
-  </button>
-
-  <br><br>
-
-  <input type="file" onchange="restoreBackup(this.files[0])">
-</div>
 
 <h2>読書ノート</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
@@ -81,11 +42,24 @@ OpenBD にデータが無い場合は、手動登録できます。<br>
   <div id="book-list"></div>
 </div>
 
+<hr>
+
+<!-- バックアップ（文字列方式） -->
+<div style="margin:20px; text-align:center;">
+  <button onclick="saveBackup()" style="padding:10px 20px; font-size:18px;">
+    バックアップ保存（文字列）
+  </button>
+
+  <button onclick="restoreBackupString()" style="padding:10px 20px; font-size:18px; margin-left:10px;">
+    バックアップ復元（文字列）
+  </button>
+</div>
+
 <!-- QuaggaJS 読み取りライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
 <!-- 読書管理アプリの処理（books.js） -->
-<script src="js/books.js"></script>
+<script src="books.js"></script>
 
 </body>
 </html>

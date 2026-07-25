@@ -8,6 +8,41 @@ let cameraStopped = false;
 let lastCode = "";
 let isProcessing = false;
 
+let booksDB = null;
+let booksCache = [];
+
+/* -----------------------------------
+   IndexedDB 初期化
+----------------------------------- */
+function initBooksDB() {
+  const request = indexedDB.open("booksDB", 1);
+
+  request.onupgradeneeded = function (event) {
+    const db = event.target.result;
+    if (!db.objectStoreNames.contains("books")) {
+      db.createObjectStore("books", { keyPath: "isbn" });
+    }
+  };
+
+  request.onsuccess = function (event) {
+    booksDB = event.target.result;
+    const tx = booksDB.transaction("books", "readonly");
+    const store = tx.objectStore("books");
+    const getAll = store.getAll();
+
+    getAll.onsuccess = function () {
+      booksCache = getAll.result || [];
+      // 必要なら初回表示をここで呼ぶ
+      // renderBookList(currentSort, currentGroup);
+    };
+  };
+
+  request.onerror = function () {
+    console.error("IndexedDB の初期化に失敗しました");
+    booksCache = [];
+  };
+}
+
 /* -----------------------------------
    カタカナ → ひらがな変換
 ----------------------------------- */
@@ -57,31 +92,58 @@ async function fetchBookInfo(isbn) {
 }
 
 /* -----------------------------------
-   localStorage
+   IndexedDB ラッパー
 ----------------------------------- */
 function getBooks() {
-  return JSON.parse(localStorage.getItem("books") || "[]");
+  return booksCache.slice();
 }
 
 function saveBook(info) {
-  const books = getBooks();
-  books.push(info);
-  localStorage.setItem("books", JSON.stringify(books));
-
+  booksCache.push(info);
   currentGroup = getGroupFromYomi(info.yomi);
+
+  if (!booksDB) {
+    console.error("DB 未初期化のため保存できません");
+    return;
+  }
+
+  const tx = booksDB.transaction("books", "readwrite");
+  const store = tx.objectStore("books");
+  store.put(info);
 }
 
 function updateBook(index, info) {
-  const books = getBooks();
-  books[index] = info;
-  localStorage.setItem("books", JSON.stringify(books));
+  if (index < 0 || index >= booksCache.length) return;
+
+  booksCache[index] = info;
+
+  if (!booksDB) {
+    console.error("DB 未初期化のため更新できません");
+    return;
+  }
+
+  const tx = booksDB.transaction("books", "readwrite");
+  const store = tx.objectStore("books");
+  store.put(info);
+
   renderBookList(currentSort, currentGroup);
 }
 
 function deleteBook(index) {
-  const books = getBooks();
-  books.splice(index, 1);
-  localStorage.setItem("books", JSON.stringify(books));
+  if (index < 0 || index >= booksCache.length) return;
+
+  const isbn = booksCache[index].isbn;
+  booksCache.splice(index, 1);
+
+  if (!booksDB) {
+    console.error("DB 未初期化のため削除できません");
+    return;
+  }
+
+  const tx = booksDB.transaction("books", "readwrite");
+  const store = tx.objectStore("books");
+  store.delete(isbn);
+
   renderBookList(currentSort, currentGroup);
 }
 
@@ -150,6 +212,7 @@ function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
   }
 
   const list = document.getElementById("book-list");
+  if (!list) return;
   list.innerHTML = "";
 
   books.forEach((book) => {
@@ -389,47 +452,53 @@ function drawTopButtons() {
 }
 
 /* -----------------------------------
-   バックアップ保存（Safari警告なし版）
+   バックアップ（文字列方式）
 ----------------------------------- */
 function saveBackup() {
   const books = getBooks();
   const json = JSON.stringify(books);
-  const blob = new Blob([json], { type: "application/json" });
-  const reader = new FileReader();
+  const encoded = btoa(json);
 
-  reader.onload = function () {
-    const a = document.createElement("a");
-    a.href = reader.result;  // Base64 データURL
-    a.download = "Books_backup.json";
-    a.click();
-  };
-
-  reader.readAsDataURL(blob);
-
-  alert("バックアップを保存しました");
+  prompt("バックアップ文字列をコピーしてください", encoded);
 }
 
-/* -----------------------------------
-   バックアップ復元
------------------------------------ */
-function restoreBackup(file) {
-  const reader = new FileReader();
+function restoreBackupString() {
+  const str = prompt("バックアップ文字列を貼り付けてください");
+  if (!str) return;
 
-  reader.onload = function(e) {
-    const json = e.target.result;
-    const restored = JSON.parse(json);
+  let books;
+  try {
+    const json = atob(str);
+    books = JSON.parse(json);
+  } catch (e) {
+    alert("バックアップ文字列の形式が不正です");
+    return;
+  }
 
-    localStorage.setItem("books", JSON.stringify(restored));
+  booksCache = books;
 
+  if (!booksDB) {
+    console.error("DB 未初期化のため復元できません");
+    return;
+  }
+
+  const tx = booksDB.transaction("books", "readwrite");
+  const store = tx.objectStore("books");
+  const clearReq = store.clear();
+
+  clearReq.onsuccess = function () {
+    books.forEach(book => store.put(book));
     alert("バックアップを復元しました");
-
     renderBookList(currentSort, currentGroup);
   };
 
-  reader.readAsText(file);
+  clearReq.onerror = function () {
+    alert("バックアップの復元に失敗しました");
+  };
 }
 
 /* -----------------------------------
    初期表示
 ----------------------------------- */
+initBooksDB();
 drawTopButtons();
