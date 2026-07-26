@@ -36,7 +36,7 @@ function initBooksDB() {
 }
 
 /* -----------------------------------
-   書籍読み込み
+   書籍読み込み（booksCache に反映）
 ----------------------------------- */
 function loadBooksFromDB() {
   const tx = booksDB.transaction("books", "readonly");
@@ -57,13 +57,26 @@ function saveBook(info) {
   const store = tx.objectStore("books");
   store.put(info);
 
-  store.onsuccess = function () {
+  tx.oncomplete = function () {
     loadBooksFromDB();
   };
 }
 
 /* -----------------------------------
-   重複チェック
+   書籍削除
+----------------------------------- */
+function deleteBook(isbn) {
+  const tx = booksDB.transaction("books", "readwrite");
+  const store = tx.objectStore("books");
+  store.delete(isbn);
+
+  tx.oncomplete = function () {
+    loadBooksFromDB();
+  };
+}
+
+/* -----------------------------------
+   重複チェック（IndexedDB版）
 ----------------------------------- */
 function isDuplicate(info) {
   return booksCache.some(book => book.isbn === info.isbn);
@@ -153,7 +166,7 @@ function getGroupFromYomi(yomi) {
 }
 
 /* -----------------------------------
-   一覧表示
+   一覧表示（IndexedDB版）
 ----------------------------------- */
 function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
   currentSort = sortType;
@@ -189,19 +202,6 @@ function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
 
     list.appendChild(div);
   });
-}
-
-/* -----------------------------------
-   削除
------------------------------------ */
-function deleteBook(isbn) {
-  const tx = booksDB.transaction("books", "readwrite");
-  const store = tx.objectStore("books");
-  store.delete(isbn);
-
-  store.onsuccess = function () {
-    loadBooksFromDB();
-  };
 }
 
 /* -----------------------------------
@@ -276,7 +276,7 @@ function manualSave() {
 }
 
 /* -----------------------------------
-   カメラ読み取り（修正版）
+   カメラ読み取り（安定版）
 ----------------------------------- */
 function showCamera() {
   duplicateAlertShown = false;
