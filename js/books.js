@@ -435,11 +435,15 @@ function drawTopButtons() {
    バックアップ保存（IndexedDBから直接取得）
 ----------------------------------- */
 function saveBackup() {
+
+  // ★ DB の書き込み完了を確実に待つ
   const tx = booksDB.transaction("books", "readonly");
   const store = tx.objectStore("books");
   const req = store.getAll();
 
   req.onsuccess = function () {
+
+    // ★ 最新の DB 内容を必ずバックアップする
     const books = req.result || [];
     const json = JSON.stringify(books);
     const encoded = btoa(json);
@@ -448,7 +452,9 @@ function saveBackup() {
     const store2 = tx2.objectStore("backup");
     store2.put({ id: 1, data: encoded });
 
-    alert("バックアップを保存しました（アプリ内）");
+    tx2.oncomplete = function () {
+      alert("バックアップを保存しました（アプリ内）");
+    };
   };
 
   req.onerror = function () {
