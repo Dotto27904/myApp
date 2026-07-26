@@ -44,15 +44,24 @@ OpenBD にデータが無い場合は、手動登録できます。<br>
 
 <hr>
 
-<!-- バックアップ（文字列方式） -->
+<!-- バックアップ（新方式：IndexedDB 保存） -->
 <div style="margin:20px; text-align:center;">
+
+  <!-- バックアップ保存（IndexedDB に保存） -->
   <button onclick="saveBackup()" style="padding:10px 20px; font-size:18px;">
-    バックアップ保存（文字列）
+    バックアップ保存（アプリ内）
   </button>
 
+  <!-- バックアップ復元（IndexedDB から読み出し） -->
   <button onclick="restoreBackupString()" style="padding:10px 20px; font-size:18px; margin-left:10px;">
-    バックアップ復元（文字列）
+    バックアップ復元（アプリ内）
   </button>
+
+  <!-- 機種変更用：バックアップ文字列を表示 -->
+  <button onclick="exportBackupString()" style="padding:10px 20px; font-size:18px; margin-left:10px;">
+    バックアップ文字列を表示
+  </button>
+
 </div>
 
 <!-- QuaggaJS 読み取りライブラリ -->
