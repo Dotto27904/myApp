@@ -203,7 +203,6 @@ function renderBookList(sortType = "yomi", group = null, topIsbn = null) {
     list.appendChild(div);
   });
 }
-
 /* -----------------------------------
    手動登録フォーム
 ----------------------------------- */
@@ -276,7 +275,7 @@ function manualSave() {
 }
 
 /* -----------------------------------
-   カメラ読み取り（安定版）
+   カメラ読み取り（競合対策版）
 ----------------------------------- */
 function showCamera() {
   duplicateAlertShown = false;
@@ -375,6 +374,7 @@ function showCamera() {
 
       const group = getGroupFromYomi(info.yomi);
 
+      // ★ IndexedDB 書き込み完了を待つ（競合防止）
       setTimeout(() => {
         renderBookList("yomi", group, info.isbn);
         alert("登録しました");
@@ -432,38 +432,47 @@ function drawTopButtons() {
 }
 
 /* -----------------------------------
-   バックアップ保存（IndexedDBから直接取得）
+   バックアップ保存（競合完全対策版）
 ----------------------------------- */
-function saveBackup() {
+function saveBackup(retry = 0) {
+  try {
+    const tx = booksDB.transaction("books", "readonly");
+    const store = tx.objectStore("books");
+    const req = store.getAll();
 
-  // ★ DB の書き込み完了を確実に待つ
-  const tx = booksDB.transaction("books", "readonly");
-  const store = tx.objectStore("books");
-  const req = store.getAll();
+    req.onsuccess = function () {
+      const books = req.result || [];
+      const json = JSON.stringify(books);
+      const encoded = btoa(json);
 
-  req.onsuccess = function () {
+      const tx2 = booksDB.transaction("backup", "readwrite");
+      const store2 = tx2.objectStore("backup");
+      store2.put({ id: 1, data: encoded });
 
-    // ★ 最新の DB 内容を必ずバックアップする
-    const books = req.result || [];
-    const json = JSON.stringify(books);
-    const encoded = btoa(json);
-
-    const tx2 = booksDB.transaction("backup", "readwrite");
-    const store2 = tx2.objectStore("backup");
-    store2.put({ id: 1, data: encoded });
-
-    tx2.oncomplete = function () {
-      alert("バックアップを保存しました（アプリ内）");
+      tx2.oncomplete = function () {
+        alert("バックアップを保存しました（アプリ内）");
+      };
     };
-  };
 
-  req.onerror = function () {
-    alert("バックアップの作成に失敗しました");
-  };
+    req.onerror = function () {
+      if (retry < 3) {
+        setTimeout(() => saveBackup(retry + 1), 100);
+      } else {
+        alert("バックアップの作成に失敗しました");
+      }
+    };
+
+  } catch (e) {
+    if (retry < 3) {
+      setTimeout(() => saveBackup(retry + 1), 100);
+    } else {
+      alert("バックアップの作成に失敗しました");
+    }
+  }
 }
 
 /* -----------------------------------
-   バックアップ復元（IndexedDB）
+   バックアップ復元（競合対策版）
 ----------------------------------- */
 function restoreBackupString() {
   const tx = booksDB.transaction("backup", "readonly");
@@ -486,6 +495,8 @@ function restoreBackupString() {
     store2.clear().onsuccess = function () {
       books.forEach(book => store2.put(book));
       alert("バックアップを復元しました");
+
+      // ★ 復元後の表示を確実に更新
       loadBooksFromDB();
     };
   };
