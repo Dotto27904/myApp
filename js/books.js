@@ -320,19 +320,16 @@ function showCamera() {
     if (isProcessing) return;
     isProcessing = true;
 
-    // ★ 次にカメラ停止（連続発火を完全に止める）
-    if (cameraStopped) return;
-    cameraStopped = true;
-    Quagga.stop();
-
     const now = Date.now();
     const code = data.codeResult.code;
 
+    // ISBN でない場合は何もしない（カメラ継続）
     if (!code.startsWith("978") && !code.startsWith("979")) {
       isProcessing = false;
       return;
     }
 
+    // 同じコードを短時間に連続検出した場合もスルー（カメラ継続）
     if (code === lastCode && now - lastScanTime < 3000) {
       isProcessing = false;
       return;
@@ -344,20 +341,31 @@ function showCamera() {
     const isbn = code;
     const info = await fetchBookInfo(isbn);
 
+    // ★ OpenBD にデータがない場合
     if (!info) {
       alert("書誌データがありません（OpenBDに情報なし）\n手動登録できます。");
+
+      cameraStopped = true;
+      Quagga.stop();
+
       showManualEntryForm();
       isProcessing = false;
       return;
     }
 
+    // ★ 重複チェック
     if (isDuplicate(info)) {
       alert("この本はすでに登録されています");
+
+      cameraStopped = true;
+      Quagga.stop();
+
       drawTopButtons();
       isProcessing = false;
       return;
     }
 
+    // ★ 取り込み確認
     const ok = confirm(
       `タイトル：${info.title}\n著者：${info.author}\n\n取り込みますか？`
     );
@@ -370,6 +378,10 @@ function showCamera() {
       setTimeout(() => {
         renderBookList("yomi", group, info.isbn);
         alert("登録しました");
+
+        cameraStopped = true;
+        Quagga.stop();
+
         drawTopButtons();
         document.getElementById("middle-area").innerHTML = "";
         isProcessing = false;
@@ -377,6 +389,10 @@ function showCamera() {
 
       return;
     }
+
+    // ★ ユーザーがキャンセルした場合
+    cameraStopped = true;
+    Quagga.stop();
 
     drawTopButtons();
     isProcessing = false;
@@ -416,17 +432,28 @@ function drawTopButtons() {
 }
 
 /* -----------------------------------
-   バックアップ保存（IndexedDB）
+   バックアップ保存（IndexedDBから直接取得）
 ----------------------------------- */
 function saveBackup() {
-  const json = JSON.stringify(booksCache);
-  const encoded = btoa(json);
+  const tx = booksDB.transaction("books", "readonly");
+  const store = tx.objectStore("books");
+  const req = store.getAll();
 
-  const tx = booksDB.transaction("backup", "readwrite");
-  const store = tx.objectStore("backup");
-  store.put({ id: 1, data: encoded });
+  req.onsuccess = function () {
+    const books = req.result || [];
+    const json = JSON.stringify(books);
+    const encoded = btoa(json);
 
-  alert("バックアップを保存しました（アプリ内）");
+    const tx2 = booksDB.transaction("backup", "readwrite");
+    const store2 = tx2.objectStore("backup");
+    store2.put({ id: 1, data: encoded });
+
+    alert("バックアップを保存しました（アプリ内）");
+  };
+
+  req.onerror = function () {
+    alert("バックアップの作成に失敗しました");
+  };
 }
 
 /* -----------------------------------
@@ -456,6 +483,10 @@ function restoreBackupString() {
       loadBooksFromDB();
     };
   };
+
+  req.onerror = function () {
+    alert("バックアップの読み込みに失敗しました");
+  };
 }
 
 /* -----------------------------------
@@ -474,6 +505,10 @@ function exportBackupString() {
 
     const encoded = req.result.data;
     prompt("この文字列をコピーして新しい端末に移してください", encoded);
+  };
+
+  req.onerror = function () {
+    alert("バックアップの読み込みに失敗しました");
   };
 }
 
