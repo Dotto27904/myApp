@@ -276,7 +276,7 @@ function manualSave() {
 }
 
 /* -----------------------------------
-   カメラ読み取り
+   カメラ読み取り（修正版）
 ----------------------------------- */
 function showCamera() {
   duplicateAlertShown = false;
@@ -315,43 +315,44 @@ function showCamera() {
   });
 
   Quagga.onDetected(async function(data) {
+
+    // ★ 最初に処理中チェック（複数発火防止）
+    if (isProcessing) return;
+    isProcessing = true;
+
+    // ★ 次にカメラ停止（連続発火を完全に止める）
     if (cameraStopped) return;
+    cameraStopped = true;
+    Quagga.stop();
 
     const now = Date.now();
     const code = data.codeResult.code;
 
-    if (!code.startsWith("978") && !code.startsWith("979")) return;
+    if (!code.startsWith("978") && !code.startsWith("979")) {
+      isProcessing = false;
+      return;
+    }
 
-    if (code === lastCode && now - lastScanTime < 3000) return;
+    if (code === lastCode && now - lastScanTime < 3000) {
+      isProcessing = false;
+      return;
+    }
 
     lastCode = code;
     lastScanTime = now;
-
-    if (isProcessing) return;
-    isProcessing = true;
 
     const isbn = code;
     const info = await fetchBookInfo(isbn);
 
     if (!info) {
       alert("書誌データがありません（OpenBDに情報なし）\n手動登録できます。");
-
-      cameraStopped = true;
-      Quagga.stop();
-
       showManualEntryForm();
-
       isProcessing = false;
       return;
     }
 
     if (isDuplicate(info)) {
-      if (!duplicateAlertShown) {
-        alert("この本はすでに登録されています");
-        duplicateAlertShown = true;
-      }
-      cameraStopped = true;
-      Quagga.stop();
+      alert("この本はすでに登録されています");
       drawTopButtons();
       isProcessing = false;
       return;
@@ -366,22 +367,17 @@ function showCamera() {
 
       const group = getGroupFromYomi(info.yomi);
 
-      renderBookList("yomi", group, info.isbn);
-
-      alert("登録しました");
-
-      cameraStopped = true;
-      Quagga.stop();
-      isProcessing = false;
-
-      setTimeout(drawTopButtons, 10);
-      document.getElementById("middle-area").innerHTML = "";
+      setTimeout(() => {
+        renderBookList("yomi", group, info.isbn);
+        alert("登録しました");
+        drawTopButtons();
+        document.getElementById("middle-area").innerHTML = "";
+        isProcessing = false;
+      }, 200);
 
       return;
     }
 
-    cameraStopped = true;
-    Quagga.stop();
     drawTopButtons();
     isProcessing = false;
   });
