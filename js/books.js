@@ -152,22 +152,33 @@ const BooksManager = {
         });
     },
 
-    /* -----------------------------------
-       10. バックアップ（次回追加）
-    ----------------------------------- */
-    exportBackupString() {
-        const json = JSON.stringify(this.getBooks());
-        return btoa(json); // Base64
-    },
+/* -----------------------------------
+   10. バックアップ
+----------------------------------- */
+exportBackupString() {
+    const json = JSON.stringify(this.getBooks());
 
-    importBackupString(str) {
-        try {
-            const json = atob(str);
-            const books = JSON.parse(json);
-            localStorage.setItem("books", JSON.stringify(books));
-            return true;
-        } catch {
-            return false;
-        }
+    // UTF-8 を Base64 に安全に変換
+    const utf8 = encodeURIComponent(json);
+    const bin = utf8.replace(/%([0-9A-F]{2})/g, (match, p1) =>
+        String.fromCharCode(parseInt(p1, 16))
+    );
+    return btoa(bin);
+},
+
+importBackupString(str) {
+    try {
+        const bin = atob(str);
+        const utf8 = bin.split("").map(c =>
+            "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join("");
+        const json = decodeURIComponent(utf8);
+        const books = JSON.parse(json);
+        localStorage.setItem("books", JSON.stringify(books));
+        return true;
+    } catch {
+        return false;
     }
+}
+
 };

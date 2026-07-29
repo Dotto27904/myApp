@@ -34,7 +34,7 @@
   </button>
 </div>
 
-<h2>読書ノート0.0.6</h2>
+<h2>読書ノート 0.0.7</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
@@ -70,6 +70,9 @@ OpenBD にデータが無い場合は、手動登録できます。<br>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script src="js/books.js"></script>
+
+<!-- QRコード生成ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
 let currentSort = "yomi";
@@ -237,7 +240,7 @@ function saveEdit(index) {
 }
 
 /* -----------------------------------
-   バックアップ表示＋コピー
+   バックアップ表示＋コピー＋QRコード
 ----------------------------------- */
 function showBackupData() {
   const top = document.getElementById("top-area");
@@ -247,8 +250,10 @@ function showBackupData() {
   top.innerHTML = `
     <h3>バックアップデータ</h3>
     <textarea id="backup-view" style="width:90%; height:150px;">${backupStr}</textarea><br><br>
-    <button onclick="copyBackup()">コピーする</button>
+    <button onclick="copyBackup()">コピー</button>
+    <button onclick="showBackupQr()" style="margin-left:10px;">QRコード表示</button>
     <button onclick="drawTopButtons()" style="margin-left:10px;">戻る</button>
+    <div id="backup-qrcode" style="margin-top:20px;"></div>
   `;
 }
 
@@ -257,11 +262,23 @@ function copyBackup() {
 
   navigator.clipboard.writeText(text)
     .then(() => {
-      alert("バックアップデータをコピーしました。\nメール本文に貼り付けて送信できます。");
+      alert("バックアップデータをコピーしました。\nメール本文などに貼り付けて使えます。");
     })
     .catch(() => {
-      alert("コピーに失敗しました。手動で選択してコピーしてください。");
+      alert("コピーに失敗しました。テキストを選択して手動でコピーしてください。");
     });
+}
+
+function showBackupQr() {
+  const text = document.getElementById("backup-view").value;
+  const qrDiv = document.getElementById("backup-qrcode");
+  qrDiv.innerHTML = ""; // 再表示時にクリア
+
+  new QRCode(qrDiv, {
+    text: text,
+    width: 256,
+    height: 256
+  });
 }
 
 /* -----------------------------------
