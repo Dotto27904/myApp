@@ -34,7 +34,7 @@
   </button>
 </div>
 
-<h2>読書ノート（Safari対応版）</h2>
+<h2>読書ノート（Safari対応版0.10）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
@@ -68,15 +68,13 @@ OpenBD にデータが無い場合は、手動登録できます。<br>
   <div id="book-list"></div>
 </div>
 
+<!-- 外部ライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script src="js/books.js"></script>
-
-<!-- QRコード生成ライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-<!-- QRコード読み取りライブラリ -->
 <script src="https://unpkg.com/html5-qrcode"></script>
 
+<!-- 自前のスクリプトはここから下だけ -->
 <script>
 let currentSort = "yomi";
 let currentGroup = "ア行";
@@ -84,31 +82,31 @@ let duplicateAlertShown = false;
 let cameraStopped = false;
 let lastCode = "";
 let isProcessing = false;
+let restoreQrScanner = null;
 
 /* -----------------------------------
    OpenBD
 ----------------------------------- */
 async function fetchBookInfo(isbn) {
-    try {
-        const url = "https://api.openbd.jp/v1/get?isbn=" + isbn;
-        const res = await fetch(url);
-        const data = await res.json();
+  try {
+    const url = "https://api.openbd.jp/v1/get?isbn=" + isbn;
+    const res = await fetch(url);
+    const data = await res.json();
 
-        if (!data || !data[0]) return null;
+    if (!data || !data[0]) return null;
 
-        const summary = data[0].summary;
-        const title = summary.title || "";
-        const author = summary.author || "";
-        let yomi = summary.volume || "";
+    const summary = data[0].summary;
+    const title = summary.title || "";
+    const author = summary.author || "";
+    let yomi = summary.volume || "";
 
-        if (!yomi) yomi = BooksManager.fallbackYomi(title);
-        else yomi = BooksManager.normalizeYomi(yomi);
+    if (!yomi) yomi = BooksManager.fallbackYomi(title);
+    else yomi = BooksManager.normalizeYomi(yomi);
 
-        return { isbn, title, author, yomi };
-
-    } catch {
-        return null;
-    }
+    return { isbn, title, author, yomi };
+  } catch {
+    return null;
+  }
 }
 
 /* -----------------------------------
@@ -143,6 +141,108 @@ function drawTopButtons() {
   top.appendChild(btn3);
   top.appendChild(btn4);
 }
+
+/* -----------------------------------
+   手動登録フォーム
+----------------------------------- */
+function showManualEntryForm() {
+  const top = document.getElementById("top-area");
+  top.innerHTML = `
+    <h3>手動登録</h3>
+
+    ISBN：<br>
+    <input id="m-isbn" type="text"><br><br>
+
+    タイトル：<br>
+    <input id="m-title" type="text"><br><br>
+
+    著者：<br>
+    <input id="m-author" type="text"><br><br>
+
+    よみ：<br>
+    <input id="m-yomi" type="text"
+           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
+
+    <button onclick="manualSave()">登録する</button>
+    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
+  `;
+}
+
+function manualSave() {
+  const info = {
+    isbn: document.getElementById("m-isbn").value || ("temp_" + Date.now()),
+    title: document.getElementById("m-title").value,
+    author: document.getElementById("m-author").value,
+    yomi: document.getElementById("m-yomi").value
+  };
+
+  if (!info.title || !info.yomi) {
+    alert("タイトル・よみは必須です");
+    return;
+  }
+
+  if (BooksManager.isDuplicate(info)) {
+    alert("この本はすでに登録されています");
+    drawTopButtons();
+    return;
+  }
+
+  BooksManager.saveBook(info);
+
+  const group = BooksManager.getGroupFromYomi(info.yomi);
+  BooksManager.renderBookList("yomi", group, info.isbn);
+
+  alert("登録しました");
+  setTimeout(drawTopButtons, 10);
+  document.getElementById("middle-area").innerHTML = "";
+}
+
+/* -----------------------------------
+   編集
+----------------------------------- */
+function editBook(index) {
+  const books = BooksManager.getBooks();
+  const book = books[index];
+
+  const top = document.getElementById("top-area");
+  top.innerHTML = `
+    <h3>編集</h3>
+
+    ISBN：<br>
+    <input id="e-isbn" type="text" value="${book.isbn}"><br><br>
+
+    タイトル：<br>
+    <input id="e-title" type="text" value="${book.title}"><br><br>
+
+    著者：<br>
+    <input id="e-author" type="text" value="${book.author}"><br><br>
+
+    よみ：<br>
+    <input id="e-yomi" type="text" value="${book.yomi}"
+           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
+
+    <button onclick="saveEdit(${index})">保存</button>
+    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
+  `;
+}
+
+function saveEdit(index) {
+  const info = {
+    isbn: document.getElementById("e-isbn").value,
+    title: document.getElementById("e-title").value,
+    author: document.getElementById("e-author").value,
+    yomi: document.getElementById("e-yomi").value
+  };
+
+  BooksManager.updateBook(index, info);
+
+  const group = BooksManager.getGroupFromYomi(info.yomi);
+  BooksManager.renderBookList("yomi", group);
+
+  alert("更新しました");
+  drawTopButtons();
+}
+
 /* -----------------------------------
    バックアップ表示＋コピー＋QRコード
 ----------------------------------- */
@@ -176,7 +276,7 @@ function copyBackup() {
 function showBackupQr() {
   const text = document.getElementById("backup-view").value;
   const qrDiv = document.getElementById("backup-qrcode");
-  qrDiv.innerHTML = ""; // 再表示時にクリア
+  qrDiv.innerHTML = "";
 
   new QRCode(qrDiv, {
     text: text,
@@ -205,20 +305,15 @@ function showRestoreUI() {
   `;
 }
 
-let restoreQrScanner = null;
-
 function startRestoreQr() {
   const camArea = document.getElementById("restore-camera");
-  camArea.innerHTML = ""; // 再表示時にクリア
+  camArea.innerHTML = "";
 
   restoreQrScanner = new Html5Qrcode("restore-camera");
 
   restoreQrScanner.start(
     { facingMode: "environment" },
-    {
-      fps: 10,
-      qrbox: 250
-    },
+    { fps: 10, qrbox: 250 },
     qrCodeMessage => {
       document.getElementById("restore-text").value = qrCodeMessage;
 
@@ -360,9 +455,6 @@ function showCamera() {
   });
 }
 
-/* -----------------------------------
-   カメラ停止
------------------------------------ */
 function stopCamera() {
   cameraStopped = true;
   Quagga.stop();
