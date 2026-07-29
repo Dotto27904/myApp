@@ -34,12 +34,12 @@
   </button>
 </div>
 
-<h2>読書ノート 0.0.5</h2>
+<h2>読書ノート（Safari対応版）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
 
-<!-- 上段：読み取りボタン＋手動登録ボタン＋バックアップ -->
+<!-- 上段：ボタン -->
 <div id="top-area" style="margin:20px; text-align:center;"></div>
 
 <h3>タイトル別</h3>
@@ -62,7 +62,7 @@ OpenBD にデータが無い場合は、手動登録できます。<br>
 <!-- 中段：読み取り終了ボタン -->
 <div id="middle-area" style="margin:20px; text-align:center;"></div>
 
-<!-- 下段：読み込んだ本一覧 -->
+<!-- 下段：一覧 -->
 <div id="bottom-area" style="margin:20px;">
   <h3>読んだ本一覧</h3>
   <div id="book-list"></div>
@@ -80,7 +80,7 @@ let lastCode = "";
 let isProcessing = false;
 
 /* -----------------------------------
-   fetchBookInfo（OpenBD）
+   OpenBD
 ----------------------------------- */
 async function fetchBookInfo(isbn) {
     try {
@@ -100,8 +100,7 @@ async function fetchBookInfo(isbn) {
 
         return { isbn, title, author, yomi };
 
-    } catch (e) {
-        console.log("OpenBD error:", e);
+    } catch {
         return null;
     }
 }
@@ -121,7 +120,7 @@ function drawTopButtons() {
   const btn2 = document.createElement("button");
   btn2.textContent = "手動登録";
   btn2.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
-  btn2.onclick = () => showManualEntryForm();
+  btn2.onclick = showManualEntryForm;
 
   const btn3 = document.createElement("button");
   btn3.textContent = "バックアップを表示";
@@ -187,16 +186,62 @@ function manualSave() {
   BooksManager.renderBookList("yomi", group, info.isbn);
 
   alert("登録しました");
-
   setTimeout(drawTopButtons, 10);
   document.getElementById("middle-area").innerHTML = "";
 }
 
 /* -----------------------------------
-   バックアップ表示＋コピー（Safari100％対応）
+   編集
+----------------------------------- */
+function editBook(index) {
+  const books = BooksManager.getBooks();
+  const book = books[index];
+
+  const top = document.getElementById("top-area");
+  top.innerHTML = `
+    <h3>編集</h3>
+
+    ISBN：<br>
+    <input id="e-isbn" type="text" value="${book.isbn}"><br><br>
+
+    タイトル：<br>
+    <input id="e-title" type="text" value="${book.title}"><br><br>
+
+    著者：<br>
+    <input id="e-author" type="text" value="${book.author}"><br><br>
+
+    よみ：<br>
+    <input id="e-yomi" type="text" value="${book.yomi}"
+           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
+
+    <button onclick="saveEdit(${index})">保存</button>
+    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
+  `;
+}
+
+function saveEdit(index) {
+  const info = {
+    isbn: document.getElementById("e-isbn").value,
+    title: document.getElementById("e-title").value,
+    author: document.getElementById("e-author").value,
+    yomi: document.getElementById("e-yomi").value
+  };
+
+  BooksManager.updateBook(index, info);
+
+  const group = BooksManager.getGroupFromYomi(info.yomi);
+  BooksManager.renderBookList("yomi", group);
+
+  alert("更新しました");
+  drawTopButtons();
+}
+
+/* -----------------------------------
+   バックアップ表示＋コピー
 ----------------------------------- */
 function showBackupData() {
   const top = document.getElementById("top-area");
+
   const backupStr = BooksManager.exportBackupString();
 
   top.innerHTML = `
