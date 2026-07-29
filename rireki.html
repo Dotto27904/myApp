@@ -1,36 +1,62 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>読書ノート</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>読書ノート</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    .tab-button {
+      padding: 10px 15px;
+      margin: 4px;
+      font-size: 18px;
+      border-radius: 8px;
+      border: 1px solid #666;
+      background-color: #f0f0f0;
+    }
+    .tab-button:hover {
+      background-color: #e0e0e0;
+    }
+    input[type="text"] {
+      width: 90%;
+      padding: 4px;
+      margin-top: 4px;
+    }
+  </style>
 </head>
 
 <body>
 
-<h2>読書ノート1-6</h2>
+<div style="text-align:left; margin:10px;">
+  <button onclick="location.href='index.html'"
+          style="padding:10px 20px; font-size:16px;">
+    ← 戻る
+  </button>
+</div>
+
+<h2>読書ノート</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
 
-<!-- 上段：読み取りボタン＋手動登録ボタン -->
+<!-- 上段：読み取りボタン＋手動登録ボタン＋バックアップ -->
 <div id="top-area" style="margin:20px; text-align:center;"></div>
 
 <h3>タイトル別</h3>
 
 <!-- タブ分類 -->
 <div id="tabs" style="margin:20px; text-align:center;">
-  <button class="tab-button" onclick="renderBookList(currentSort,'ア行')">あ行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'カ行')">か行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'サ行')">さ行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'タ行')">た行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'ナ行')">な行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'ハ行')">は行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'マ行')">ま行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'ヤ行')">や行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'ラ行')">ら行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'ワ行')">わ行</button>
-  <button class="tab-button" onclick="renderBookList(currentSort,'その他')">その他</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'ア行')">あ行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'カ行')">か行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'サ行')">さ行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'タ行')">た行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'ナ行')">な行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'ハ行')">は行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'マ行')">ま行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'ヤ行')">や行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'ラ行')">ら行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'ワ行')">わ行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'その他')">その他</button>
 </div>
 
 <!-- 中段：読み取り終了ボタン -->
@@ -42,33 +68,292 @@ OpenBD にデータが無い場合は、手動登録できます。<br>
   <div id="book-list"></div>
 </div>
 
-<hr>
-
-<!-- バックアップ（新方式：IndexedDB 保存） -->
-<div style="margin:20px; text-align:center;">
-
-  <!-- バックアップ保存（IndexedDB に保存） -->
-  <button onclick="saveBackup()" style="padding:10px 20px; font-size:18px;">
-    バックアップ保存（アプリ内）
-  </button>
-
-  <!-- バックアップ復元（IndexedDB から読み出し） -->
-  <button onclick="restoreBackupString()" style="padding:10px 20px; font-size:18px; margin-left:10px;">
-    バックアップ復元（アプリ内）
-  </button>
-
-  <!-- 機種変更用：バックアップ文字列を表示 -->
-  <button onclick="exportBackupString()" style="padding:10px 20px; font-size:18px; margin-left:10px;">
-    バックアップ文字列を表示
-  </button>
-
-</div>
-
-<!-- QuaggaJS 読み取りライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script src="books.js"></script>
 
-<!-- 読書管理アプリの処理（books.js） -->
-<script src="js/books.js"></script>
+<script>
+let currentSort = "yomi";
+let currentGroup = "ア行";
+let duplicateAlertShown = false;
+let cameraStopped = false;
+let lastCode = "";
+let isProcessing = false;
+
+/* -----------------------------------
+   初期ボタン描画
+----------------------------------- */
+function drawTopButtons() {
+  const top = document.getElementById("top-area");
+  top.innerHTML = "";
+
+  const btn1 = document.createElement("button");
+  btn1.textContent = "バーコード読み込み";
+  btn1.style = "padding:10px 20px; font-size:18px;";
+  btn1.onclick = showCamera;
+
+  const btn2 = document.createElement("button");
+  btn2.textContent = "手動登録";
+  btn2.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
+  btn2.onclick = () => showManualEntryForm();
+
+  const btn3 = document.createElement("button");
+  btn3.textContent = "バックアップをメールで送る";
+  btn3.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
+  btn3.onclick = sendBackupMail;
+
+  const btn4 = document.createElement("button");
+  btn4.textContent = "メールの文字列から復元";
+  btn4.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
+  btn4.onclick = showRestoreForm;
+
+  top.appendChild(btn1);
+  top.appendChild(btn2);
+  top.appendChild(btn3);
+  top.appendChild(btn4);
+}
+
+/* -----------------------------------
+   手動登録フォーム
+----------------------------------- */
+function showManualEntryForm() {
+  const top = document.getElementById("top-area");
+  top.innerHTML = `
+    <h3>手動登録</h3>
+
+    ISBN：<br>
+    <input id="m-isbn" type="text" value=""><br><br>
+
+    タイトル：<br>
+    <input id="m-title" type="text"><br><br>
+
+    著者：<br>
+    <input id="m-author" type="text"><br><br>
+
+    よみ：<br>
+    <input id="m-yomi" type="text"
+           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
+
+    <button onclick="manualSave()">登録する</button>
+    <button onclick="drawTopButtons()">キャンセル</button>
+  `;
+}
+
+/* -----------------------------------
+   手動登録
+----------------------------------- */
+function manualSave() {
+  const info = {
+    isbn: document.getElementById("m-isbn").value,
+    title: document.getElementById("m-title").value,
+    author: document.getElementById("m-author").value,
+    yomi: document.getElementById("m-yomi").value
+  };
+
+  if (!info.title || !info.yomi) {
+    alert("タイトル・よみは必須です");
+    return;
+  }
+
+  if (!info.isbn) {
+    info.isbn = "temp_" + Date.now();
+  }
+
+  if (BooksManager.isDuplicate(info)) {
+    alert("この本はすでに登録されています");
+    drawTopButtons();
+    return;
+  }
+
+  BooksManager.saveBook(info);
+
+  const group = BooksManager.getGroupFromYomi(info.yomi);
+
+  BooksManager.renderBookList("yomi", group, info.isbn);
+
+  alert("登録しました");
+
+  setTimeout(drawTopButtons, 10);
+  document.getElementById("middle-area").innerHTML = "";
+}
+
+/* -----------------------------------
+   バックアップをメールで送る
+----------------------------------- */
+function sendBackupMail() {
+  const backupStr = BooksManager.exportBackupString();
+
+  const subject = "読書ノートバックアップ";
+  const body = `以下のバックアップ文字列を保存してください。\n\n${backupStr}`;
+
+  const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  location.href = mailto;
+}
+
+/* -----------------------------------
+   復元フォーム
+----------------------------------- */
+function showRestoreForm() {
+  const top = document.getElementById("top-area");
+  top.innerHTML = `
+    <h3>バックアップ復元</h3>
+    バックアップ文字列を貼り付けてください：<br>
+    <textarea id="restore-text" style="width:90%; height:120px;"></textarea><br><br>
+    <button onclick="restoreBackup()">復元する</button>
+    <button onclick="drawTopButtons()">キャンセル</button>
+  `;
+}
+
+/* -----------------------------------
+   復元処理
+----------------------------------- */
+function restoreBackup() {
+  const str = document.getElementById("restore-text").value.trim();
+
+  if (!str) {
+    alert("文字列が空です");
+    return;
+  }
+
+  const ok = BooksManager.importBackupString(str);
+
+  if (ok) {
+    alert("復元しました");
+    BooksManager.renderBookList(currentSort, currentGroup);
+    drawTopButtons();
+  } else {
+    alert("復元に失敗しました（文字列が壊れている可能性があります）");
+  }
+}
+
+/* -----------------------------------
+   カメラ読み取り
+----------------------------------- */
+function showCamera() {
+  duplicateAlertShown = false;
+  cameraStopped = false;
+  isProcessing = false;
+  lastCode = "";
+
+  const top = document.getElementById("top-area");
+  top.innerHTML = "";
+  const camDiv = document.createElement("div");
+  camDiv.id = "camera";
+  camDiv.style = "width:100%; max-width:400px; margin:auto;";
+  top.appendChild(camDiv);
+
+  const mid = document.getElementById("middle-area");
+  mid.innerHTML = "";
+  const stopBtn = document.createElement("button");
+  stopBtn.textContent = "読み取りを終わる";
+  stopBtn.style = "padding:10px 20px; font-size:18px;";
+  stopBtn.onclick = stopCamera;
+  mid.appendChild(stopBtn);
+
+  let lastScanTime = 0;
+
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.querySelector('#camera'),
+      constraints: { facingMode: "environment" }
+    },
+    decoder: { readers: ["ean_reader"] }
+  }, function(err) {
+    if (err) { console.log(err); return; }
+    Quagga.start();
+  });
+
+  Quagga.onDetected(async function(data) {
+    if (cameraStopped) return;
+
+    const now = Date.now();
+    const code = data.codeResult.code;
+
+    if (!code.startsWith("978") && !code.startsWith("979")) return;
+
+    if (code === lastCode && now - lastScanTime < 3000) return;
+
+    lastCode = code;
+    lastScanTime = now;
+
+    if (isProcessing) return;
+    isProcessing = true;
+
+    const isbn = code;
+    const info = await fetchBookInfo(isbn);
+
+    if (!info) {
+      alert("書誌データがありません（OpenBDに情報なし）\n手動登録できます。");
+
+      cameraStopped = true;
+      Quagga.stop();
+
+      showManualEntryForm();
+
+      isProcessing = false;
+      return;
+    }
+
+    if (BooksManager.isDuplicate(info)) {
+      if (!duplicateAlertShown) {
+        alert("この本はすでに登録されています");
+        duplicateAlertShown = true;
+      }
+      cameraStopped = true;
+      Quagga.stop();
+      drawTopButtons();
+      isProcessing = false;
+      return;
+    }
+
+    const ok = confirm(
+      `タイトル：${info.title}\n著者：${info.author}\n\n取り込みますか？`
+    );
+
+    if (ok) {
+      BooksManager.saveBook(info);
+
+      const group = BooksManager.getGroupFromYomi(info.yomi);
+
+      BooksManager.renderBookList("yomi", group, info.isbn);
+
+      alert("登録しました");
+
+      cameraStopped = true;
+      Quagga.stop();
+      isProcessing = false;
+
+      setTimeout(drawTopButtons, 10);
+      document.getElementById("middle-area").innerHTML = "";
+
+      return;
+    }
+
+    cameraStopped = true;
+    Quagga.stop();
+    drawTopButtons();
+    isProcessing = false;
+  });
+}
+
+/* -----------------------------------
+   カメラ停止
+----------------------------------- */
+function stopCamera() {
+  cameraStopped = true;
+  Quagga.stop();
+  const cam = document.querySelector('#camera');
+  if (cam) cam.innerHTML = "";
+  drawTopButtons();
+}
+
+/* -----------------------------------
+   初期表示
+----------------------------------- */
+drawTopButtons();
+BooksManager.renderBookList("yomi", "ア行");
+</script>
 
 </body>
 </html>
