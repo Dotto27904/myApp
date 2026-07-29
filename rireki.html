@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート</title>
+  <title>読書ノート0.0.1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -78,6 +78,44 @@ let duplicateAlertShown = false;
 let cameraStopped = false;
 let lastCode = "";
 let isProcessing = false;
+
+/* -----------------------------------
+   fetchBookInfo（OpenBD）
+----------------------------------- */
+async function fetchBookInfo(isbn) {
+    try {
+        const url = "https://api.openbd.jp/v1/get?isbn=" + isbn;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data || !data[0]) {
+            return null;
+        }
+
+        const summary = data[0].summary;
+
+        const title = summary.title || "";
+        const author = summary.author || "";
+        let yomi = summary.volume || "";
+
+        if (!yomi) {
+            yomi = BooksManager.fallbackYomi(title);
+        } else {
+            yomi = BooksManager.normalizeYomi(yomi);
+        }
+
+        return {
+            isbn,
+            title,
+            author,
+            yomi
+        };
+
+    } catch (e) {
+        console.log("OpenBD error:", e);
+        return null;
+    }
+}
 
 /* -----------------------------------
    初期ボタン描画
