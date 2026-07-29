@@ -17,7 +17,7 @@
     .tab-button:hover {
       background-color: #e0e0e0;
     }
-    input[type="text"] {
+    input[type="text"], input[type="email"], textarea {
       width: 90%;
       padding: 4px;
       margin-top: 4px;
@@ -99,7 +99,7 @@ function drawTopButtons() {
   const btn3 = document.createElement("button");
   btn3.textContent = "バックアップをメールで送る";
   btn3.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
-  btn3.onclick = sendBackupMail;
+  btn3.onclick = sendBackupMailUI;
 
   const btn4 = document.createElement("button");
   btn4.textContent = "メールの文字列から復元";
@@ -134,7 +134,7 @@ function showManualEntryForm() {
            oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
 
     <button onclick="manualSave()">登録する</button>
-    <button onclick="drawTopButtons()">キャンセル</button>
+    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
   `;
 }
 
@@ -177,16 +177,46 @@ function manualSave() {
 }
 
 /* -----------------------------------
-   バックアップをメールで送る
+   バックアップ送付 UI
 ----------------------------------- */
-function sendBackupMail() {
+function sendBackupMailUI() {
+  const top = document.getElementById("top-area");
+  top.innerHTML = `
+    <h3>バックアップ送付</h3>
+    バックアップの送付先のメールアドレスを入力してください：<br><br>
+    <input id="backup-mail" type="email" style="width:90%; padding:8px;"><br><br>
+    <button onclick="sendBackupMailExec()">送付</button>
+    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
+  `;
+}
+
+/* -----------------------------------
+   バックアップ送付実行（Safari対応）
+----------------------------------- */
+function sendBackupMailExec() {
+  const mail = document.getElementById("backup-mail").value.trim();
+
+  if (!mail) {
+    alert("メールアドレスを入力してください");
+    return;
+  }
+
   const backupStr = BooksManager.exportBackupString();
 
   const subject = "読書ノートバックアップ";
   const body = `以下のバックアップ文字列を保存してください。\n\n${backupStr}`;
 
-  const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  location.href = mailto;
+  const mailto = `mailto:${encodeURIComponent(mail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  const a = document.createElement("a");
+  a.href = mailto;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  alert("メールアプリを開きました");
+  drawTopButtons();
 }
 
 /* -----------------------------------
@@ -199,7 +229,7 @@ function showRestoreForm() {
     バックアップ文字列を貼り付けてください：<br>
     <textarea id="restore-text" style="width:90%; height:120px;"></textarea><br><br>
     <button onclick="restoreBackup()">復元する</button>
-    <button onclick="drawTopButtons()">キャンセル</button>
+    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
   `;
 }
 
