@@ -223,13 +223,13 @@ function sendBackupMailUI() {
     <h3>バックアップ送付</h3>
     バックアップの送付先のメールアドレスを入力してください：<br><br>
     <input id="backup-mail" type="email" style="width:90%; padding:8px;"><br><br>
-    <button onclick="sendBackupMailExec()">送付</button>
-    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
+    <button type="button" onclick="sendBackupMailExec()">送付</button>
+    <button type="button" onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
   `;
 }
 
 /* -----------------------------------
-   ★ Safari 100％対応版：メール送付実行
+   Safari向け：メール送付実行（最も素直な形）
 ----------------------------------- */
 function sendBackupMailExec() {
   const mail = document.getElementById("backup-mail").value.trim();
@@ -239,24 +239,25 @@ function sendBackupMailExec() {
     return;
   }
 
+  // バックアップ文字列を取得
   const backupStr = BooksManager.exportBackupString();
 
   const subject = "読書ノートバックアップ";
   const body = `以下のバックアップ文字列を保存してください。\n\n${backupStr}`;
 
-  const mailto = `mailto:${encodeURIComponent(mail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  // mailto URL を組み立て
+  const mailto = `mailto:${encodeURIComponent(mail)}`
+               + `?subject=${encodeURIComponent(subject)}`
+               + `&body=${encodeURIComponent(body)}`;
 
-  // ★ Safari が確実に反応する「画面にリンクを出す方式」
-  const top = document.getElementById("top-area");
-  top.innerHTML = "<h3>メール送信リンクを押してください</h3>";
+  // ★ クリック直後に location.href を直接書き換える
+  //   → Safari が「ユーザー操作」と認識しやすい形
+  window.location.href = mailto;
 
-  const link = document.createElement("a");
-  link.href = mailto;
-  link.textContent = "📩 メールを送信する";
-  link.style = "display:block; padding:20px; font-size:22px; background:#eef; border-radius:10px; margin-top:20px;";
-
-  top.appendChild(link);
+  // ここでは drawTopButtons() は呼ばず、
+  // 画面はそのままにしておく（メール画面に遷移する前提）
 }
+
 
 /* -----------------------------------
    復元フォーム
