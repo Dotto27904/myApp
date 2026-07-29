@@ -34,7 +34,7 @@
   </button>
 </div>
 
-<h2>読書ノート 0.0.7</h2>
+<h2>読書ノート（Safari対応版）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
@@ -73,6 +73,9 @@ OpenBD にデータが無い場合は、手動登録できます。<br>
 
 <!-- QRコード生成ライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- QRコード読み取りライブラリ -->
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
 let currentSort = "yomi";
@@ -130,115 +133,16 @@ function drawTopButtons() {
   btn3.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
   btn3.onclick = showBackupData;
 
+  const btn4 = document.createElement("button");
+  btn4.textContent = "バックアップ復元";
+  btn4.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
+  btn4.onclick = showRestoreUI;
+
   top.appendChild(btn1);
   top.appendChild(btn2);
   top.appendChild(btn3);
+  top.appendChild(btn4);
 }
-
-/* -----------------------------------
-   手動登録フォーム
------------------------------------ */
-function showManualEntryForm() {
-  const top = document.getElementById("top-area");
-  top.innerHTML = `
-    <h3>手動登録</h3>
-
-    ISBN：<br>
-    <input id="m-isbn" type="text"><br><br>
-
-    タイトル：<br>
-    <input id="m-title" type="text"><br><br>
-
-    著者：<br>
-    <input id="m-author" type="text"><br><br>
-
-    よみ：<br>
-    <input id="m-yomi" type="text"
-           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
-
-    <button onclick="manualSave()">登録する</button>
-    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
-  `;
-}
-
-/* -----------------------------------
-   手動登録
------------------------------------ */
-function manualSave() {
-  const info = {
-    isbn: document.getElementById("m-isbn").value || ("temp_" + Date.now()),
-    title: document.getElementById("m-title").value,
-    author: document.getElementById("m-author").value,
-    yomi: document.getElementById("m-yomi").value
-  };
-
-  if (!info.title || !info.yomi) {
-    alert("タイトル・よみは必須です");
-    return;
-  }
-
-  if (BooksManager.isDuplicate(info)) {
-    alert("この本はすでに登録されています");
-    drawTopButtons();
-    return;
-  }
-
-  BooksManager.saveBook(info);
-
-  const group = BooksManager.getGroupFromYomi(info.yomi);
-  BooksManager.renderBookList("yomi", group, info.isbn);
-
-  alert("登録しました");
-  setTimeout(drawTopButtons, 10);
-  document.getElementById("middle-area").innerHTML = "";
-}
-
-/* -----------------------------------
-   編集
------------------------------------ */
-function editBook(index) {
-  const books = BooksManager.getBooks();
-  const book = books[index];
-
-  const top = document.getElementById("top-area");
-  top.innerHTML = `
-    <h3>編集</h3>
-
-    ISBN：<br>
-    <input id="e-isbn" type="text" value="${book.isbn}"><br><br>
-
-    タイトル：<br>
-    <input id="e-title" type="text" value="${book.title}"><br><br>
-
-    著者：<br>
-    <input id="e-author" type="text" value="${book.author}"><br><br>
-
-    よみ：<br>
-    <input id="e-yomi" type="text" value="${book.yomi}"
-           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
-
-    <button onclick="saveEdit(${index})">保存</button>
-    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
-  `;
-}
-
-function saveEdit(index) {
-  const info = {
-    isbn: document.getElementById("e-isbn").value,
-    title: document.getElementById("e-title").value,
-    author: document.getElementById("e-author").value,
-    yomi: document.getElementById("e-yomi").value
-  };
-
-  BooksManager.updateBook(index, info);
-
-  const group = BooksManager.getGroupFromYomi(info.yomi);
-  BooksManager.renderBookList("yomi", group);
-
-  alert("更新しました");
-  drawTopButtons();
-}
-
 /* -----------------------------------
    バックアップ表示＋コピー＋QRコード
 ----------------------------------- */
@@ -282,7 +186,74 @@ function showBackupQr() {
 }
 
 /* -----------------------------------
-   カメラ読み取り
+   バックアップ復元（貼り付け＋QRコード）
+----------------------------------- */
+function showRestoreUI() {
+  const top = document.getElementById("top-area");
+
+  top.innerHTML = `
+    <h3>バックアップ復元</h3>
+
+    バックアップ文字列を貼り付けてください：<br>
+    <textarea id="restore-text" style="width:90%; height:120px;"></textarea><br><br>
+
+    <button onclick="restoreBackup()">復元する</button>
+    <button onclick="startRestoreQr()" style="margin-left:10px;">QRコードを読み取る</button>
+    <button onclick="drawTopButtons()" style="margin-left:10px;">戻る</button>
+
+    <div id="restore-camera" style="margin-top:20px;"></div>
+  `;
+}
+
+let restoreQrScanner = null;
+
+function startRestoreQr() {
+  const camArea = document.getElementById("restore-camera");
+  camArea.innerHTML = ""; // 再表示時にクリア
+
+  restoreQrScanner = new Html5Qrcode("restore-camera");
+
+  restoreQrScanner.start(
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: 250
+    },
+    qrCodeMessage => {
+      document.getElementById("restore-text").value = qrCodeMessage;
+
+      restoreQrScanner.stop();
+      restoreQrScanner.clear();
+
+      alert("QRコードを読み取りました。復元ボタンを押してください。");
+    },
+    errorMessage => {
+      console.log(errorMessage);
+    }
+  );
+}
+
+function restoreBackup() {
+  const str = document.getElementById("restore-text").value.trim();
+
+  if (!str) {
+    alert("文字列が空です");
+    return;
+  }
+
+  const ok = BooksManager.importBackupString(str);
+
+  if (ok) {
+    alert("復元しました");
+    BooksManager.renderBookList(currentSort, currentGroup);
+    drawTopButtons();
+  } else {
+    alert("復元に失敗しました（文字列が壊れている可能性があります）");
+  }
+}
+
+/* -----------------------------------
+   カメラ読み取り（ISBN）
 ----------------------------------- */
 function showCamera() {
   duplicateAlertShown = false;
