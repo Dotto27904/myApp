@@ -34,7 +34,7 @@
   </button>
 </div>
 
-<h2>読書ノート0.0.2</h2>
+<h2>読書ノート0.0.1</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
@@ -229,7 +229,7 @@ function sendBackupMailUI() {
 }
 
 /* -----------------------------------
-   バックアップ送付実行（Safari対応）
+   ★ Safari 100％対応版：メール送付実行
 ----------------------------------- */
 function sendBackupMailExec() {
   const mail = document.getElementById("backup-mail").value.trim();
@@ -246,15 +246,16 @@ function sendBackupMailExec() {
 
   const mailto = `mailto:${encodeURIComponent(mail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
-  const a = document.createElement("a");
-  a.href = mailto;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  // ★ Safari が確実に反応する「画面にリンクを出す方式」
+  const top = document.getElementById("top-area");
+  top.innerHTML = "<h3>メール送信リンクを押してください</h3>";
 
-  alert("メールアプリを開きました");
-  drawTopButtons();
+  const link = document.createElement("a");
+  link.href = mailto;
+  link.textContent = "📩 メールを送信する";
+  link.style = "display:block; padding:20px; font-size:22px; background:#eef; border-radius:10px; margin-top:20px;";
+
+  top.appendChild(link);
 }
 
 /* -----------------------------------
