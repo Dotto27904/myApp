@@ -34,10 +34,14 @@
   </button>
 </div>
 
-<h2>読書ノート（Safari対応版 1.0 / QR削除版）</h2>
-読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
-OpenBD にデータが無い場合は、手動登録できます。<br>
-よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
+<h2>読書ノート（Safari対応版 1.1 / QR削除版）</h2>
+
+<!-- ★ 説明文（ここを書き換える） -->
+<div id="description">
+  読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
+  OpenBD にデータが無い場合は、手動登録できます。<br>
+  よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
+</div>
 
 <!-- 上段：ボタン -->
 <div id="top-area" style="margin:20px; text-align:center;"></div>
@@ -110,6 +114,14 @@ async function fetchBookInfo(isbn) {
    初期ボタン描画
 ----------------------------------- */
 function drawTopButtons() {
+
+  // ★ 説明文を初期状態に戻す
+  document.getElementById("description").innerHTML = `
+    読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
+    OpenBD にデータが無い場合は、手動登録できます。<br>
+    よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
+  `;
+
   const top = document.getElementById("top-area");
   top.innerHTML = "";
 
@@ -129,20 +141,14 @@ function drawTopButtons() {
   btn3.onclick = showBackupData;
 
   const btn4 = document.createElement("button");
-  btn4.textContent = "バックアップ作成（ファイル）";
+  btn4.textContent = "バックアップ復元（文字列）";
   btn4.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
-  btn4.onclick = downloadBackupFile;
-
-  const btn5 = document.createElement("button");
-  btn5.textContent = "バックアップ復元（ファイル）";
-  btn5.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
-  btn5.onclick = showRestoreFileUI;
+  btn4.onclick = showRestoreTextUI;
 
   top.appendChild(btn1);
   top.appendChild(btn2);
   top.appendChild(btn3);
   top.appendChild(btn4);
-  top.appendChild(btn5);
 }
 
 /* -----------------------------------
@@ -250,8 +256,15 @@ function saveEdit(index) {
    バックアップ（文字列）
 ----------------------------------- */
 function showBackupData() {
-  const top = document.getElementById("top-area");
 
+  // ★ 説明文をバックアップ用に変更
+  document.getElementById("description").innerHTML = `
+    以下に表示される文字列をコピーして保存しておくことで、
+    データが消えた際のバックアップとして利用することができます。<br>
+    また、メール等で送ることで、他の端末にデータをコピーすることができます。
+  `;
+
+  const top = document.getElementById("top-area");
   const backupStr = BooksManager.exportBackupString();
 
   top.innerHTML = `
@@ -275,42 +288,34 @@ function copyBackup() {
 }
 
 /* -----------------------------------
-   バックアップ作成（ファイル保存）
+   バックアップ復元（文字列）
 ----------------------------------- */
-function downloadBackupFile() {
-  const data = BooksManager.exportBackupString();
-  const blob = new Blob([data], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
+function showRestoreTextUI() {
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "backup.txt";
+  // ★ 説明文を復元用に変更
+  document.getElementById("description").innerHTML = `
+    スマホを変えた際や、データが消えた際に、
+    バックアップデータを貼り付けることで、データを復元することができます。
+  `;
 
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  URL.revokeObjectURL(url);
-}
-
-/* -----------------------------------
-   バックアップ復元（ファイル）
------------------------------------ */
-function showRestoreFileUI() {
   const top = document.getElementById("top-area");
 
   top.innerHTML = `
-    <h3>バックアップ復元（ファイル）</h3>
-    <input type="file" id="restore-file" accept=".txt"><br><br>
-    <button onclick="restoreBackupFromFile()">復元する</button>
+    <h3>バックアップ復元（文字列）</h3>
+
+    バックアップ文字列を貼り付けてください：<br>
+    <textarea id="restore-text" style="width:90%; height:120px;"></textarea><br><br>
+
+    <button onclick="restoreBackupFromText()">復元する</button>
     <button onclick="drawTopButtons()" style="margin-left:10px;">戻る</button>
   `;
 }
 
-function restoreBackupFromFile() {
-  const fileInput = document.getElementById("restore-file");
-  if (!fileInput.files.length) {
-    alert("ファイルを選択してください");
+function restoreBackupFromText() {
+  const str = document.getElementById("restore-text").value.trim();
+
+  if (!str) {
+    alert("文字列が空です");
     return;
   }
 
@@ -318,23 +323,15 @@ function restoreBackupFromFile() {
     return;
   }
 
-  const file = fileInput.files[0];
-  const reader = new FileReader();
+  const ok = BooksManager.importBackupString(str);
 
-  reader.onload = function(e) {
-    const text = e.target.result.trim();
-    const ok = BooksManager.importBackupString(text);
-
-    if (ok) {
-      alert("バックアップから復元しました");
-      BooksManager.renderBookList(currentSort, currentGroup);
-      drawTopButtons();
-    } else {
-      alert("復元に失敗しました（ファイルが壊れている可能性があります）");
-    }
-  };
-
-  reader.readAsText(file);
+  if (ok) {
+    alert("復元しました");
+    BooksManager.renderBookList(currentSort, currentGroup);
+    drawTopButtons();
+  } else {
+    alert("復元に失敗しました（文字列が壊れている可能性があります）");
+  }
 }
 
 /* -----------------------------------
