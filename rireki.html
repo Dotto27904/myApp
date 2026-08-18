@@ -34,7 +34,7 @@
   </button>
 </div>
 
-<h2>読書ノート（Safari対応版0.10）</h2>
+<h2>読書ノート（Safari対応版 1.0 / QR削除版）</h2>
 読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
 OpenBD にデータが無い場合は、手動登録できます。<br>
 よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
@@ -68,13 +68,11 @@ OpenBD にデータが無い場合は、手動登録できます。<br>
   <div id="book-list"></div>
 </div>
 
-<!-- 外部ライブラリ -->
+<!-- 外部ライブラリ（QR関連は削除） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script src="js/books.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
 
-<!-- 自前のスクリプトはここから下だけ -->
+<!-- 自前のスクリプト -->
 <script>
 let currentSort = "yomi";
 let currentGroup = "ア行";
@@ -82,7 +80,6 @@ let duplicateAlertShown = false;
 let cameraStopped = false;
 let lastCode = "";
 let isProcessing = false;
-let restoreQrScanner = null;
 
 /* -----------------------------------
    OpenBD
@@ -127,19 +124,25 @@ function drawTopButtons() {
   btn2.onclick = showManualEntryForm;
 
   const btn3 = document.createElement("button");
-  btn3.textContent = "バックアップを表示";
+  btn3.textContent = "バックアップ（文字列）";
   btn3.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
   btn3.onclick = showBackupData;
 
   const btn4 = document.createElement("button");
-  btn4.textContent = "バックアップ復元";
+  btn4.textContent = "バックアップ作成（ファイル）";
   btn4.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
-  btn4.onclick = showRestoreUI;
+  btn4.onclick = downloadBackupFile;
+
+  const btn5 = document.createElement("button");
+  btn5.textContent = "バックアップ復元（ファイル）";
+  btn5.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
+  btn5.onclick = showRestoreFileUI;
 
   top.appendChild(btn1);
   top.appendChild(btn2);
   top.appendChild(btn3);
   top.appendChild(btn4);
+  top.appendChild(btn5);
 }
 
 /* -----------------------------------
@@ -244,7 +247,7 @@ function saveEdit(index) {
 }
 
 /* -----------------------------------
-   バックアップ表示＋コピー＋QRコード
+   バックアップ（文字列）
 ----------------------------------- */
 function showBackupData() {
   const top = document.getElementById("top-area");
@@ -252,12 +255,10 @@ function showBackupData() {
   const backupStr = BooksManager.exportBackupString();
 
   top.innerHTML = `
-    <h3>バックアップデータ</h3>
+    <h3>バックアップ（文字列）</h3>
     <textarea id="backup-view" style="width:90%; height:150px;">${backupStr}</textarea><br><br>
     <button onclick="copyBackup()">コピー</button>
-    <button onclick="showBackupQr()" style="margin-left:10px;">QRコード表示</button>
     <button onclick="drawTopButtons()" style="margin-left:10px;">戻る</button>
-    <div id="backup-qrcode" style="margin-top:20px;"></div>
   `;
 }
 
@@ -273,78 +274,61 @@ function copyBackup() {
     });
 }
 
-function showBackupQr() {
-  const text = document.getElementById("backup-view").value;
-  const qrDiv = document.getElementById("backup-qrcode");
-  qrDiv.innerHTML = "";
+/* -----------------------------------
+   バックアップ作成（ファイル保存）
+----------------------------------- */
+function downloadBackupFile() {
+  const data = BooksManager.exportBackupString();
+  const url = "data:text/plain;charset=utf-8," + encodeURIComponent(data);
 
-  new QRCode(qrDiv, {
-    text: text,
-    width: 256,
-    height: 256
-  });
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "backup.txt";
+  a.click();
 }
 
 /* -----------------------------------
-   バックアップ復元（貼り付け＋QRコード）
+   バックアップ復元（ファイル）
 ----------------------------------- */
-function showRestoreUI() {
+function showRestoreFileUI() {
   const top = document.getElementById("top-area");
 
   top.innerHTML = `
-    <h3>バックアップ復元</h3>
-
-    バックアップ文字列を貼り付けてください：<br>
-    <textarea id="restore-text" style="width:90%; height:120px;"></textarea><br><br>
-
-    <button onclick="restoreBackup()">復元する</button>
-    <button onclick="startRestoreQr()" style="margin-left:10px;">QRコードを読み取る</button>
+    <h3>バックアップ復元（ファイル）</h3>
+    <input type="file" id="restore-file" accept=".txt"><br><br>
+    <button onclick="restoreBackupFromFile()">復元する</button>
     <button onclick="drawTopButtons()" style="margin-left:10px;">戻る</button>
-
-    <div id="restore-camera" style="margin-top:20px;"></div>
   `;
 }
 
-function startRestoreQr() {
-  const camArea = document.getElementById("restore-camera");
-  camArea.innerHTML = "";
-
-  restoreQrScanner = new Html5Qrcode("restore-camera");
-
-  restoreQrScanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    qrCodeMessage => {
-      document.getElementById("restore-text").value = qrCodeMessage;
-
-      restoreQrScanner.stop();
-      restoreQrScanner.clear();
-
-      alert("QRコードを読み取りました。復元ボタンを押してください。");
-    },
-    errorMessage => {
-      console.log(errorMessage);
-    }
-  );
-}
-
-function restoreBackup() {
-  const str = document.getElementById("restore-text").value.trim();
-
-  if (!str) {
-    alert("文字列が空です");
+function restoreBackupFromFile() {
+  const fileInput = document.getElementById("restore-file");
+  if (!fileInput.files.length) {
+    alert("ファイルを選択してください");
     return;
   }
 
-  const ok = BooksManager.importBackupString(str);
-
-  if (ok) {
-    alert("復元しました");
-    BooksManager.renderBookList(currentSort, currentGroup);
-    drawTopButtons();
-  } else {
-    alert("復元に失敗しました（文字列が壊れている可能性があります）");
+  if (!confirm("本当にバックアップを保存したときの状態に戻しても良いですか？")) {
+    return;
   }
+
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const text = e.target.result.trim();
+    const ok = BooksManager.importBackupString(text);
+
+    if (ok) {
+      alert("バックアップから復元しました");
+      BooksManager.renderBookList(currentSort, currentGroup);
+      drawTopButtons();
+    } else {
+      alert("復元に失敗しました（ファイルが壊れている可能性があります）");
+    }
+  };
+
+  reader.readAsText(file);
 }
 
 /* -----------------------------------
