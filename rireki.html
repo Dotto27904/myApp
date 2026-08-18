@@ -279,12 +279,18 @@ function copyBackup() {
 ----------------------------------- */
 function downloadBackupFile() {
   const data = BooksManager.exportBackupString();
-  const url = "data:text/plain;charset=utf-8," + encodeURIComponent(data);
+  const blob = new Blob([data], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
   a.download = "backup.txt";
+
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
+
+  URL.revokeObjectURL(url);
 }
 
 /* -----------------------------------
