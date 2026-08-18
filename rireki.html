@@ -34,13 +34,14 @@
   </button>
 </div>
 
-<h2>読書ノート（Safari対応版 1.1 / QR削除版）</h2>
+<h2>読書ノート</h2>
 
 <!-- ★ 説明文（ここを書き換える） -->
 <div id="description">
   読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
-  OpenBD にデータが無い場合は、手動登録できます。<br>
-  よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
+  読み込むバーコードは、本の裏面の２段のバーコードです。<br>
+  上手く読み込めない場合は、手動で登録することも可能です。<br>
+  よみは「ひらがな」「アルファベット」「数字」のみ入力できます。
 </div>
 
 <!-- 上段：ボタン -->
@@ -117,16 +118,22 @@ function drawTopButtons() {
 
   // ★ 説明文を初期状態に戻す
   document.getElementById("description").innerHTML = `
-    読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
-    OpenBD にデータが無い場合は、手動登録できます。<br>
-    よみは「ひらがな＋英字＋数字＋ー」のみ入力できます。
+  読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
+  読み込むバーコードは、本の裏面の２段のバーコードです。<br>
+  上手く読み込めない場合は、手動で登録することも可能です。<br>
+  よみは「ひらがな」「アルファベット」「数字」のみ入力できます。
   `;
 
   const top = document.getElementById("top-area");
   top.innerHTML = "";
 
+  // ▼ 本の登録セクション
+  const h3Register = document.createElement("h3");
+  h3Register.textContent = "本の登録";
+  top.appendChild(h3Register);
+
   const btn1 = document.createElement("button");
-  btn1.textContent = "バーコード読み込み";
+  btn1.textContent = "バーコード読み取り";
   btn1.style = "padding:10px 20px; font-size:18px;";
   btn1.onclick = showCamera;
 
@@ -135,18 +142,25 @@ function drawTopButtons() {
   btn2.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
   btn2.onclick = showManualEntryForm;
 
+  top.appendChild(btn1);
+  top.appendChild(btn2);
+
+  // ▼ バックアップセクション
+  const h3Backup = document.createElement("h3");
+  h3Backup.textContent = "バックアップ";
+  h3Backup.style = "margin-top:25px;";
+  top.appendChild(h3Backup);
+
   const btn3 = document.createElement("button");
-  btn3.textContent = "バックアップ（文字列）";
-  btn3.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
+  btn3.textContent = "バックアップ作成";
+  btn3.style = "padding:10px 20px; font-size:18px;";
   btn3.onclick = showBackupData;
 
   const btn4 = document.createElement("button");
-  btn4.textContent = "バックアップ復元（文字列）";
+  btn4.textContent = "バックアップ復元";
   btn4.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
   btn4.onclick = showRestoreTextUI;
 
-  top.appendChild(btn1);
-  top.appendChild(btn2);
   top.appendChild(btn3);
   top.appendChild(btn4);
 }
