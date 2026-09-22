@@ -36,7 +36,6 @@
 
 <h2>読書ノート</h2>
 
-<!-- ★ 説明文（ここを書き換える） -->
 <div id="description">
   読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
   読み込むバーコードは、本の裏面の２段のバーコードです。<br>
@@ -61,7 +60,17 @@
   <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'ヤ行')">や行</button>
   <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'ラ行')">ら行</button>
   <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'ワ行')">わ行</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'英字')">英字</button>
+  <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'数字')">数字</button>
   <button class="tab-button" onclick="BooksManager.renderBookList(currentSort,'その他')">その他</button>
+</div>
+
+<!-- ソートボタン -->
+<div style="text-align:center; margin:10px;">
+  <button onclick="BooksManager.renderBookList('yomi', currentGroup)">よみ順</button>
+  <button onclick="BooksManager.renderBookList('title', currentGroup)">タイトル順</button>
+  <button onclick="BooksManager.renderBookList('author', currentGroup)">著者順</button>
+  <button onclick="BooksManager.renderBookList('created', currentGroup)">登録順</button>
 </div>
 
 <!-- 中段：読み取り終了ボタン -->
@@ -73,11 +82,9 @@
   <div id="book-list"></div>
 </div>
 
-<!-- 外部ライブラリ（QR関連は削除） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script src="js/books.js"></script>
 
-<!-- 自前のスクリプト -->
 <script>
 let currentSort = "yomi";
 let currentGroup = "ア行";
@@ -115,8 +122,6 @@ async function fetchBookInfo(isbn) {
    初期ボタン描画
 ----------------------------------- */
 function drawTopButtons() {
-
-  // ★ 説明文を初期状態に戻す
   document.getElementById("description").innerHTML = `
   読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
   読み込むバーコードは、本の裏面の２段のバーコードです。<br>
@@ -127,7 +132,6 @@ function drawTopButtons() {
   const top = document.getElementById("top-area");
   top.innerHTML = "";
 
-  // ▼ 本の登録セクション
   const h3Register = document.createElement("h3");
   h3Register.textContent = "本の登録";
   top.appendChild(h3Register);
@@ -145,7 +149,6 @@ function drawTopButtons() {
   top.appendChild(btn1);
   top.appendChild(btn2);
 
-  // ▼ バックアップセクション
   const h3Backup = document.createElement("h3");
   h3Backup.textContent = "バックアップ";
   h3Backup.style = "margin-top:25px;";
@@ -257,7 +260,12 @@ function saveEdit(index) {
     yomi: document.getElementById("e-yomi").value
   };
 
-  BooksManager.updateBook(index, info);
+  const ok = BooksManager.updateBook(index, info);
+
+  if (!ok) {
+    alert("同じ ISBN の本が既に登録されています");
+    return;
+  }
 
   const group = BooksManager.getGroupFromYomi(info.yomi);
   BooksManager.renderBookList("yomi", group);
@@ -270,8 +278,6 @@ function saveEdit(index) {
    バックアップ（文字列）
 ----------------------------------- */
 function showBackupData() {
-
-  // ★ 説明文をバックアップ用に変更
   document.getElementById("description").innerHTML = `
     以下に表示される文字列をコピーして保存しておくことで、
     データが消えた際のバックアップとして利用することができます。<br>
@@ -305,8 +311,6 @@ function copyBackup() {
    バックアップ復元（文字列）
 ----------------------------------- */
 function showRestoreTextUI() {
-
-  // ★ 説明文を復元用に変更
   document.getElementById("description").innerHTML = `
     スマホを変えた際や、データが消えた際に、
     バックアップデータを貼り付けることで、データを復元することができます。
