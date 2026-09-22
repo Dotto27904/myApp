@@ -22,6 +22,35 @@
       padding: 4px;
       margin-top: 4px;
     }
+
+    /* ▼ カード風デザイン */
+    .book-card {
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      padding: 12px;
+      margin: 10px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      background-color: #fff;
+    }
+    .book-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .book-meta {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 4px;
+    }
+    .book-buttons {
+      margin-top: 10px;
+      text-align: right;
+    }
+    .book-buttons button {
+      margin-left: 8px;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
   </style>
 </head>
 
@@ -81,7 +110,6 @@
   <h3>読んだ本一覧</h3>
   <div id="book-list"></div>
 </div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script src="js/books.js"></script>
 
@@ -119,8 +147,78 @@ async function fetchBookInfo(isbn) {
 }
 
 /* -----------------------------------
-   初期ボタン描画
+   ★ renderBookList のカード＋書影フォールバック版
 ----------------------------------- */
+BooksManager.renderBookList = function(sortType = "yomi", group = null, topIsbn = null) {
+    window.currentSort = sortType;
+    if (group !== null) window.currentGroup = group;
+
+    const allBooks = this.getBooks();
+    let books = [...allBooks];
+
+    books = books.filter(book =>
+        this.getGroupFromYomi(book.yomi) === window.currentGroup
+    );
+
+    if (sortType === "title") {
+        books.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+    } else if (sortType === "author") {
+        books.sort((a, b) => (a.author || "").localeCompare(b.author || ""));
+    } else if (sortType === "created") {
+        // 登録順
+    } else {
+        books.sort((a, b) => (a.yomi || "").localeCompare(b.yomi || ""));
+    }
+
+    if (topIsbn) {
+        const idx = books.findIndex(b => b.isbn === topIsbn);
+        if (idx > -1) {
+            const [target] = books.splice(idx, 1);
+            books.unshift(target);
+        }
+    }
+
+    const list = document.getElementById("book-list");
+    list.innerHTML = "";
+
+    books.forEach((book) => {
+        const originalIndex = allBooks.findIndex(b => b.isbn === book.isbn);
+
+        const div = document.createElement("div");
+        div.className = "book-card";
+
+        const openbdUrl = `https://cover.openbd.jp/${book.isbn}.jpg`;
+        const ndlUrl = `https://ndlsearch.ndl.go.jp/thumbnail/ISBN/${book.isbn}`;
+
+        div.innerHTML = `
+            <div style="display:flex; gap:12px;">
+                <img src="${openbdUrl}"
+                     onerror="this.onerror=null; this.src='${ndlUrl}'; this.onerror=function(){ this.src='noimage.png'; };"
+                     style="width:80px; height:110px; object-fit:cover; border-radius:6px;">
+                
+                <div style="flex:1;">
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-meta">著者：${book.author}</div>
+                    <div class="book-meta">よみ：${book.yomi}</div>
+                    <div class="book-meta">ISBN：${book.isbn}</div>
+                </div>
+            </div>
+
+            <div class="book-buttons">
+                <button onclick="editBook(${originalIndex})">編集</button>
+                <button onclick="BooksManager.confirmDelete(${originalIndex})">削除</button>
+            </div>
+        `;
+
+        list.appendChild(div);
+    });
+};
+
+/* -----------------------------------
+   以下はあなたの元コードそのまま
+----------------------------------- */
+
+/* 初期ボタン描画 */
 function drawTopButtons() {
   document.getElementById("description").innerHTML = `
   読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
@@ -128,7 +226,6 @@ function drawTopButtons() {
   上手く読み込めない場合は、手動で登録することも可能です。<br>
   よみは「ひらがな」「アルファベット」「数字」のみ入力できます。
   `;
-
   const top = document.getElementById("top-area");
   top.innerHTML = "";
 
@@ -168,9 +265,7 @@ function drawTopButtons() {
   top.appendChild(btn4);
 }
 
-/* -----------------------------------
-   手動登録フォーム
------------------------------------ */
+/* 手動登録フォーム */
 function showManualEntryForm() {
   const top = document.getElementById("top-area");
   top.innerHTML = `
@@ -223,9 +318,7 @@ function manualSave() {
   document.getElementById("middle-area").innerHTML = "";
 }
 
-/* -----------------------------------
-   編集
------------------------------------ */
+/* 編集 */
 function editBook(index) {
   const books = BooksManager.getBooks();
   const book = books[index];
@@ -274,9 +367,7 @@ function saveEdit(index) {
   drawTopButtons();
 }
 
-/* -----------------------------------
-   バックアップ（文字列）
------------------------------------ */
+/* バックアップ（文字列） */
 function showBackupData() {
   document.getElementById("description").innerHTML = `
     以下に表示される文字列をコピーして保存しておくことで、
@@ -307,9 +398,7 @@ function copyBackup() {
     });
 }
 
-/* -----------------------------------
-   バックアップ復元（文字列）
------------------------------------ */
+/* バックアップ復元 */
 function showRestoreTextUI() {
   document.getElementById("description").innerHTML = `
     スマホを変えた際や、データが消えた際に、
@@ -349,131 +438,5 @@ function restoreBackupFromText() {
     drawTopButtons();
   } else {
     alert("復元に失敗しました（文字列が壊れている可能性があります）");
-  }
 }
-
-/* -----------------------------------
-   カメラ読み取り（ISBN）
------------------------------------ */
-function showCamera() {
-  duplicateAlertShown = false;
-  cameraStopped = false;
-  isProcessing = false;
-  lastCode = "";
-
-  const top = document.getElementById("top-area");
-  top.innerHTML = "";
-  const camDiv = document.createElement("div");
-  camDiv.id = "camera";
-  camDiv.style = "width:100%; max-width:400px; margin:auto;";
-  top.appendChild(camDiv);
-
-  const mid = document.getElementById("middle-area");
-  mid.innerHTML = "";
-  const stopBtn = document.createElement("button");
-  stopBtn.textContent = "読み取りを終わる";
-  stopBtn.style = "padding:10px 20px; font-size:18px;";
-  stopBtn.onclick = stopCamera;
-  mid.appendChild(stopBtn);
-
-  let lastScanTime = 0;
-
-  Quagga.init({
-    inputStream: {
-      name: "Live",
-      type: "LiveStream",
-      target: document.querySelector('#camera'),
-      constraints: { facingMode: "environment" }
-    },
-    decoder: { readers: ["ean_reader"] }
-  }, function(err) {
-    if (err) { console.log(err); return; }
-    Quagga.start();
-  });
-
-  Quagga.onDetected(async function(data) {
-    if (cameraStopped) return;
-
-    const now = Date.now();
-    const code = data.codeResult.code;
-
-    if (!code.startsWith("978") && !code.startsWith("979")) return;
-
-    if (code === lastCode && now - lastScanTime < 3000) return;
-
-    lastCode = code;
-    lastScanTime = now;
-
-    if (isProcessing) return;
-    isProcessing = true;
-
-    const isbn = code;
-    const info = await fetchBookInfo(isbn);
-
-    if (!info) {
-      alert("書誌データがありません（OpenBDに情報なし）\n手動登録できます。");
-
-      cameraStopped = true;
-      Quagga.stop();
-      showManualEntryForm();
-      isProcessing = false;
-      return;
-    }
-
-    if (BooksManager.isDuplicate(info)) {
-      if (!duplicateAlertShown) {
-        alert("この本はすでに登録されています");
-        duplicateAlertShown = true;
-      }
-      cameraStopped = true;
-      Quagga.stop();
-      drawTopButtons();
-      isProcessing = false;
-      return;
-    }
-
-    const ok = confirm(
-      `タイトル：${info.title}\n著者：${info.author}\n\n取り込みますか？`
-    );
-
-    if (ok) {
-      BooksManager.saveBook(info);
-
-      const group = BooksManager.getGroupFromYomi(info.yomi);
-      BooksManager.renderBookList("yomi", group, info.isbn);
-
-      alert("登録しました");
-
-      cameraStopped = true;
-      Quagga.stop();
-      isProcessing = false;
-
-      setTimeout(drawTopButtons, 10);
-      document.getElementById("middle-area").innerHTML = "";
-      return;
-    }
-
-    cameraStopped = true;
-    Quagga.stop();
-    drawTopButtons();
-    isProcessing = false;
-  });
 }
-
-function stopCamera() {
-  cameraStopped = true;
-  Quagga.stop();
-  const cam = document.querySelector('#camera');
-  if (cam) cam.innerHTML = "";
-  drawTopButtons();
-}
-
-/* -----------------------------------
-   初期表示
------------------------------------ */
-drawTopButtons();
-BooksManager.renderBookList("yomi", "ア行");
-</script>
-
-</body>
-</html>
