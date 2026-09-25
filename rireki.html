@@ -663,7 +663,7 @@ function showCamera() {
     const info = await fetchBookInfo(isbn);
 
     if (!info) {
-      alert("書誌データがありません（OpenBDに情報なし）\n手動登録できます。");
+      alert("書誌データがありません。\n手動登録できます。");
 
       cameraStopped = true;
       Quagga.stop();
