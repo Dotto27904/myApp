@@ -127,22 +127,30 @@ BooksManager.renderBookList = function(sortType = "yomi", group = null, topIsbn 
         const div = document.createElement("div");
         div.className = "book-card";
 
-        const openbdUrl = `https://cover.openbd.jp/${book.isbn}.jpg`;
-        const ndlUrl = `https://ndlsearch.ndl.go.jp/thumbnail/ISBN/${book.isbn}`;
+const googleUrl =
+`https://books.google.com/books/content?vid=ISBN${book.isbn}&printsec=frontcover&img=1&zoom=1`;
+ 
+const openbdUrl =
+`https://cover.openbd.jp/${book.isbn}.jpg`;
 
         div.innerHTML = `
             <div style="display:flex; gap:12px;">
-                <img src="${openbdUrl}"
-                     onerror="this.onerror=null; this.src='${ndlUrl}'; this.onerror=function(){ this.src='noimage.png'; };"
-                     style="width:80px; height:110px; object-fit:cover; border-radius:6px;">
-                
-                <div style="flex:1;">
-                    <div class="book-title">${book.title}</div>
-                    <div class="book-meta">著者：${book.author}</div>
-                    <div class="book-meta">よみ：${book.yomi}</div>
-                    <div class="book-meta">ISBN：${book.isbn}</div>
-                </div>
-            </div>
+<img src="${googleUrl}"
+onerror="this.onerror=null;
+this.src='${openbdUrl}';
+this.onerror=function(){
+this.onerror=null;
+this.src='noimage.png';
+};"
+style="width:80px; height:110px; object-fit:cover; border-radius:6px;">
+ 
+<div style="flex:1;">
+<div class="book-title">${book.title}</div>
+<div class="book-meta">著者：${book.author}</div>
+<div class="book-meta">よみ：${book.yomi}</div>
+<div class="book-meta">ISBN：${book.isbn}</div>
+</div>
+</div>
 
             <div class="book-buttons">
                 <button onclick="editBook(${originalIndex})">編集</button>
@@ -154,30 +162,210 @@ BooksManager.renderBookList = function(sortType = "yomi", group = null, topIsbn 
     });
 };
 
+
 /* -----------------------------------
-   OpenBD
+NDL検索（優先）
+----------------------------------- */
+async function fetchBookInfoFromNDL(isbn) {
+ 
+try {
+ 
+const url =
+"https://iss.ndl.go.jp/api/sru" +
+"?operation=searchRetrieve" +
+"&version=1.2" +
+"&recordSchema=dcndl_simple" +
+"&maximumRecords=1" +
+"&query=isbn=" + encodeURIComponent(isbn);
+ 
+const res = await fetch(url);
+ 
+if (!res.ok) {
+return null;
+}
+ 
+const xmlText = await res.text();
+ 
+const parser = new DOMParser();
+const xml = parser.parseFromString(xmlText, "text/xml");
+ 
+let title = "";
+let author = "";
+let yomi = "";
+ 
+const titleNode =
+xml.getElementsByTagName("dc:title")[0] ||
+xml.getElementsByTagName("title")[0];
+ 
+if (titleNode) {
+title = titleNode.textContent.trim();
+}
+ 
+const creatorNode =
+xml.getElementsByTagName("dc:creator")[0] ||
+xml.getElementsByTagName("creator")[0];
+ 
+if (creatorNode) {
+author = creatorNode.textContent.trim();
+}
+ 
+const yomiNode =
+xml.getElementsByTagName("dcndl:titleTranscription")[0] ||
+xml.getElementsByTagName("titleTranscription")[0];
+ 
+if (yomiNode) {
+yomi = yomiNode.textContent.trim();
+}
+ 
+if (yomi) {
+ 
+yomi = BooksManager.normalizeYomi(
+BooksManager.kataToHira(yomi)
+);
+ 
+}
+ 
+if (!title) {
+return null;
+}
+ 
+return {
+isbn,
+title,
+author,
+yomi
+};
+ 
+} catch (e) {
+ 
+console.log("NDL取得失敗", e);
+ 
+return null;
+ 
+}
+ 
+}
+ 
+/* -----------------------------------
+OpenBD検索（予備）
+----------------------------------- */
+async function fetchBookInfoFromOpenBD(isbn) {
+ 
+try {
+ 
+const url =
+"https://api.openbd.jp/v1/get?isbn=" + isbn;
+ 
+const res = await fetch(url);
+ 
+const data = await res.json();
+ 
+if (!data || !data[0]) {
+return null;
+}
+ 
+const summary = data[0].summary;
+ 
+const title =
+summary.title || "";
+ 
+const author =
+summary.author || "";
+ 
+let yomi = "";
+ 
+try {
+ 
+const collationkey =
+data[0].onix
+?.DescriptiveDetail
+?.TitleDetail
+?.TitleElement
+?.TitleText
+?.collationkey;
+ 
+if (collationkey) {
+ 
+yomi = BooksManager.normalizeYomi(
+BooksManager.kataToHira(
+collationkey
+)
+);
+ 
+}
+ 
+} catch (e) {
+ 
+console.log(e);
+ 
+}
+ 
+if (!yomi) {
+ 
+yomi =
+BooksManager.fallbackYomi(title);
+ 
+}
+ 
+return {
+isbn,
+title,
+author,
+yomi
+};
+ 
+} catch (e) {
+ 
+console.log("OpenBD取得失敗", e);
+ 
+return null;
+ 
+}
+ 
+}
+ 
+/* -----------------------------------
+書誌取得
+NDL → OpenBD
 ----------------------------------- */
 async function fetchBookInfo(isbn) {
-  try {
-    const url = "https://api.openbd.jp/v1/get?isbn=" + isbn;
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (!data || !data[0]) return null;
-
-    const summary = data[0].summary;
-    const title = summary.title || "";
-    const author = summary.author || "";
-    let yomi = summary.volume || "";
-
-    if (!yomi) yomi = BooksManager.fallbackYomi(title);
-    else yomi = BooksManager.normalizeYomi(yomi);
-
-    return { isbn, title, author, yomi };
-  } catch {
-    return null;
-  }
+ 
+const ndlInfo =
+await fetchBookInfoFromNDL(isbn);
+ 
+if (ndlInfo) {
+ 
+if (!ndlInfo.yomi) {
+ 
+ndlInfo.yomi =
+BooksManager.fallbackYomi(
+ndlInfo.title
+);
+ 
 }
+ 
+console.log("NDL採用");
+ 
+return ndlInfo;
+ 
+}
+ 
+const openbdInfo =
+await fetchBookInfoFromOpenBD(isbn);
+ 
+if (openbdInfo) {
+ 
+console.log("OpenBD採用");
+ 
+return openbdInfo;
+ 
+}
+ 
+return null;
+ 
+}
+
+
 
 /* -----------------------------------
    初期ボタン描画
