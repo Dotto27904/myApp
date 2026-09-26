@@ -569,12 +569,22 @@ type="text"
 style="font-size:16px; width:70%;"
 oninput="this.value=this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g,'');">
 </div>
-<button onclick="manualSave()">
+<button
+onclick="manualSave()"
+style="
+font-size:18px;
+padding:10px 20px;
+">
 登録する
 </button>
+ 
 <button
 onclick="drawTopButtons()"
-style="margin-left:10px;">
+style="
+margin-left:10px;
+font-size:18px;
+padding:10px 20px;
+">
 キャンセル
 </button>
 </div>
@@ -673,12 +683,22 @@ value="${book.yomi}"
 style="font-size:16px; width:70%;"
 oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');">
 </div>
-<button onclick="saveEdit(${index})">
+<button
+onclick="saveEdit(${index})"
+style="
+font-size:18px;
+padding:10px 20px;
+">
 保存
 </button>
+ 
 <button
 onclick="drawTopButtons()"
-style="margin-left:10px;">
+style="
+margin-left:10px;
+font-size:18px;
+padding:10px 20px;
+">
 キャンセル
 </button>
 </div>
