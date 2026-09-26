@@ -588,18 +588,13 @@ function manualSave() {
    編集
 ----------------------------------- */
 function editBook(index) {
- 
 const books = BooksManager.getBooks();
 const book = books[index];
- 
 const top =
 document.getElementById("top-area");
- 
 top.innerHTML = `
 <div style="text-align:left;">
- 
 <h3 style="text-align:left;">編集</h3>
- 
 <div style="margin-bottom:12px;">
 ISBN：
 <input
@@ -608,7 +603,6 @@ type="text"
 value="${book.isbn}"
 style="font-size:16px; width:70%;">
 </div>
-
 <div style="margin-bottom:12px;">
 タイトル：
 <input
@@ -617,7 +611,6 @@ type="text"
 value="${book.title}"
 style="font-size:16px; width:70%;">
 </div>
-
 <div style="margin-bottom:12px;">
 著者：
 <input
@@ -626,7 +619,6 @@ type="text"
 value="${book.author}"
 style="font-size:16px; width:70%;">
 </div>
-
 <div style="margin-bottom:12px;">
 よみ：
 <input
@@ -636,11 +628,9 @@ value="${book.yomi}"
 style="font-size:16px; width:70%;"
 oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');">
 </div>
-
 <button onclick="saveEdit(${index})">
 保存
 </button>
- 
 <button
 onclick="drawTopButtons()"
 style="margin-left:10px;">
