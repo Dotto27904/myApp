@@ -191,9 +191,9 @@ const openbdUrl =
  
 let displayYomi = book.yomi || "";
  
-if (displayYomi.length > 10) {
+if (displayYomi.length > 8) {
 displayYomi =
-displayYomi.substring(0, 10) + "...";
+displayYomi.substring(0, 8) + "...";
 }
  
 const div = document.createElement("div");
@@ -481,7 +481,8 @@ function drawTopButtons() {
   読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
   読み込むバーコードは、本の裏面の２段のバーコードです。<br>
   上手く読み込めない場合は、手動で登録することも可能です。<br>
-  よみは「ひらがな」「アルファベット」「数字」のみ入力できます。
+  よみは「ひらがな」「アルファベット」「数字」「記号」のみ入力できます。<br>
+  また、見づらくなるのを避けるため、よみの8文字目以降は非表示にしてあります<br>
   `);
 
   const top = document.getElementById("top-area");
