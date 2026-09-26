@@ -657,27 +657,30 @@ behavior: "smooth"
  
 }
 
+/* -----------------------------------
+   更新処理
+----------------------------------- */
 function saveEdit(index) {
  
-cons* info = {
-isbn: document.getEl*mentById("e-isbn").value,
-titl*: document.getElementById("e-title*).value,
-author: document.getE*ementById("e-author").value,
-y*mi: document.getElementById("e-yom*").value
+const info = {
+isbn: document.getElementById("e-isbn").value,
+title: document.getElementById("e-title").value,
+author: document.getElementById("e-author").value,
+yomi: document.getElementById("e-yomi").value
 };
  
-BooksManager.upda*eBook(index, info);
+BooksManager.updateBook(index, info);
  
-const group*=
-BooksManager.getGroupFromYom*(info.yomi);
+const group =
+BooksManager.getGroupFromYomi(info.yomi);
  
-BooksManager.rende*BookList("yomi", group);
+BooksManager.renderBookList("yomi", group);
  
-alert(*更新しました");
+alert("更新しました");
  
 drawTopButtons();
+ 
 }
-`*
 /* -----------------------------------
    バックアップ（文字列）
 ----------------------------------- */
