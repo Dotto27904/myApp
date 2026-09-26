@@ -114,8 +114,11 @@ function setDescription(html) {
 document.getElementById("description").innerHTML = `
 <button id="description-toggle"
 onclick="toggleDescription()"
-style="margin-bottom:8px;">
-説明文を表示
+style="
+margin-bottom:8px;
+padding:10px 20px;
+font-size:18px;
+">説明文を表示
 </button>
  
 <div id="description-body"
@@ -585,48 +588,96 @@ function manualSave() {
    編集
 ----------------------------------- */
 function editBook(index) {
-  const books = BooksManager.getBooks();
-  const book = books[index];
-
-  const top = document.getElementById("top-area");
-  top.innerHTML = `
-    <h3>編集</h3>
-
-    ISBN：<br>
-    <input id="e-isbn" type="text" value="${book.isbn}"><br><br>
-
-    タイトル：<br>
-    <input id="e-title" type="text" value="${book.title}"><br><br>
-
-    著者：<br>
-    <input id="e-author" type="text" value="${book.author}"><br><br>
-
-    よみ：<br>
-    <input id="e-yomi" type="text" value="${book.yomi}"
-           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
-
-    <button onclick="saveEdit(${index})">保存</button>
-    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
-  `;
+ 
+const books = BooksManager.getBooks();
+const book = books[index];
+ 
+const top =
+document.getElementById("top-area");
+ 
+top.innerHTML = `
+<div style="text-align:left;">
+ 
+<h3 style="text-align:left;">編集</h3>
+ 
+<div style="margin-bottom:12px;">
+ISBN：
+<input
+id="e-isbn"
+type="text"
+value="${book.isbn}"
+style="font-size:16px; width:70%;">
+</div>
+ 
+<div style="margin-bottom:12px;">
+タイトル：
+<input
+id="e-title"
+type="text"
+value="${book.title}"
+style="font-size:16px; width:70%;">
+</div>
+ 
+<div style="margin-bottom:12px;">
+著者：
+<input
+id="e-author"
+type="text"
+value="${book.author}"
+style="font-size:16px; width:70%;">
+</div>
+ 
+<div style="margin-bottom:12px;">
+よみ：
+<input
+id="e-yomi"
+type="text"
+value="${book.yomi}"
+style="font-size:16px; width:70%;"
+oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');">
+</div>
+ 
+<button onclick="saveEdit(${index})">
+保存
+</button>
+ 
+<button
+onclick="drawTopButtons()"
+style="margin-left:10px;">
+キャンセル
+</button>
+ 
+</div>
+`;
+ 
+window.scrollTo({
+top: 0,
+behavior: "smooth"
+});
+ 
 }
 
 function saveEdit(index) {
-  const info = {
-    isbn: document.getElementById("e-isbn").value,
-    title: document.getElementById("e-title").value,
-    author: document.getElementById("e-author").value,
-    yomi: document.getElementById("e-yomi").value
-  };
-
-  BooksManager.updateBook(index, info);
-
-  const group = BooksManager.getGroupFromYomi(info.yomi);
-  BooksManager.renderBookList("yomi", group);
-
-  alert("更新しました");
-  drawTopButtons();
+ 
+cons* info = {
+isbn: document.getEl*mentById("e-isbn").value,
+titl*: document.getElementById("e-title*).value,
+author: document.getE*ementById("e-author").value,
+y*mi: document.getElementById("e-yom*").value
+};
+ 
+BooksManager.upda*eBook(index, info);
+ 
+const group*=
+BooksManager.getGroupFromYom*(info.yomi);
+ 
+BooksManager.rende*BookList("yomi", group);
+ 
+alert(*更新しました");
+ 
+drawTopButtons();
 }
-
+`*
 /* -----------------------------------
    バックアップ（文字列）
 ----------------------------------- */
