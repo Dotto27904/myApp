@@ -58,7 +58,7 @@ padding: 6px;
   読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
   読み込むバーコードは、本の裏面の２段のバーコードです。<br>
   上手く読み込めない場合は、手動で登録することも可能です。<br>
-  よみは「ひらがな」「アルファベット」「数字」のみ入力できます。
+  よみは「ひらがな」「アルファベット」「数字」「記号」のみ入力できます。
 </div>
 
 <!-- 上段：ボタン -->
@@ -227,21 +227,9 @@ object-fit:cover;
 border-radius:6px;
 ">
  
-<div class="book-buttons">
- 
-<button onclick="editBook(${originalIndex})">
-編集
-</button>
- 
-<button onclick="BooksManager.confirmDelete(${originalIndex})">
-削除
-</button>
- 
 </div>
  
-</div>
- 
-<div style="flex:1;">
+<div style="flex:1; min-width:0;">
  
 <div class="book-title">
 ${book.title}
@@ -257,11 +245,44 @@ ${book.title}
  
 <div class="book-meta">
 ISBN：${book.isbn}
+
 </div>
  
 </div>
  
 </div>
+
+<div class="book-buttons"
+style="
+margin-top:10px;
+display:flex;
+gap:8px;
+">
+ 
+<button
+style="
+flex:1;
+font-size:16px;
+padding:8px;
+"
+onclick="editBook(${originalIndex})">
+編集
+</button>
+ 
+<button
+style="
+flex:1;
+font-size:16px;
+padding:8px;
+"
+onclick="BooksManager.confirmDelete(${originalIndex})">
+削除
+</button>
+ 
+</div>
+
+
+
 `;
  
 list.appendChild(div);
