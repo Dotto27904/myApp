@@ -492,9 +492,10 @@ function drawTopButtons() {
   top.innerHTML = "";
 
   // ▼ 本の登録セクション
-  const h3Register = document.createElement("h3");
-  h3Register.textContent = "本の登録";
-  top.appendChild(h3Register);
+const h3Register = document.createElement("h3");
+h3Register.textContent = "本の登録";
+h3Register.style.textAlign = "left";
+top.appendChild(h3Register);
 
   const btn1 = document.createElement("button");
   btn1.textContent = "バーコード読み取り";
@@ -510,10 +511,10 @@ function drawTopButtons() {
   top.appendChild(btn2);
 
   // ▼ バックアップセクション
-  const h3Backup = document.createElement("h3");
-  h3Backup.textContent = "バックアップ";
-  h3Backup.style = "margin-top:25px;";
-  top.appendChild(h3Backup);
+const h3Backup = document.createElement("h3");
+h3Backup.textContent = "バックアップ";
+h3Backup.style = "margin-top:25px; text-align:left;";
+top.appendChild(h3Backup);
 
   const btn3 = document.createElement("button");
   btn3.textContent = "バックアップ作成";
