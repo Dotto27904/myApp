@@ -22,6 +22,23 @@
       padding: 4px;
       margin-top: 4px;
     }
+.book-card {
+padding: 10px;
+margin-bottom: 12px;
+border-radius: 10px;
+}
+ 
+.book-buttons {
+margin-top: 8px;
+}
+ 
+.book-buttons button {
+width: 80px;
+display: block;
+margin-top: 5px;
+font-size: 16px;
+padding: 6px;
+}
   </style>
 </head>
 
@@ -81,6 +98,40 @@
 <script>
 let currentSort = "yomi";
 let currentGroup = "ア行";
+ 
+let descriptionVisible = false;
+ 
+function toggleDescription() {
+const body = document.getElementById("description-body");
+const btn = document.getElementById("description-toggle");
+ 
+descriptionVisible = !descriptionVisible;
+ 
+if (descriptionVisible) {
+body.style.display = "block";
+btn.textContent = "説明文を非表示";
+} else {
+body.style.display = "none";
+btn.textContent = "説明文を表示";
+}
+}
+ 
+function setDescription(html) {
+document.getElementById("description").innerHTML = `
+<button id="description-toggle"
+onclick="toggleDescription()"
+style="margin-bottom:8px;">
+説明文を表示
+</button>
+ 
+<div id="description-body"
+style="display:none;">
+${html}
+</div>
+`;
+ 
+descriptionVisible = false;
+}
 let duplicateAlertShown = false;
 let cameraStopped = false;
 let lastCode = "";
@@ -90,51 +141,78 @@ let isProcessing = false;
    一覧表示（カード風＋書影フォールバック）
 ----------------------------------- */
 BooksManager.renderBookList = function(sortType = "yomi", group = null, topIsbn = null) {
-    window.currentSort = sortType;
-    if (group !== null) window.currentGroup = group;
-
-    const allBooks = this.getBooks();
-    let books = [...allBooks];
-
-    books = books.filter(book =>
-        this.getGroupFromYomi(book.yomi) === window.currentGroup
-    );
-
-    if (sortType === "title") {
-        books.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-    } else if (sortType === "author") {
-        books.sort((a, b) => (a.author || "").localeCompare(b.author || ""));
-    } else if (sortType === "created") {
-        // 登録順
-    } else {
-        books.sort((a, b) => (a.yomi || "").localeCompare(b.yomi || ""));
-    }
-
-    if (topIsbn) {
-        const idx = books.findIndex(b => b.isbn === topIsbn);
-        if (idx > -1) {
-            const [target] = books.splice(idx, 1);
-            books.unshift(target);
-        }
-    }
-
-    const list = document.getElementById("book-list");
-    list.innerHTML = "";
-
-    books.forEach((book) => {
-        const originalIndex = allBooks.findIndex(b => b.isbn === book.isbn);
-
-        const div = document.createElement("div");
-        div.className = "book-card";
-
+ 
+window.currentSort = sortType;
+ 
+if (group !== null) {
+window.currentGroup = group;
+}
+ 
+const allBooks = this.getBooks();
+let books = [...allBooks];
+ 
+books = books.filter(book =>
+this.getGroupFromYomi(book.yomi) === window.currentGroup
+);
+ 
+books.sort((a, b) =>
+(a.yomi || "").localeCompare(b.yomi || "")
+);
+ 
+if (topIsbn) {
+const idx = books.findIndex(b => b.isbn === topIsbn);
+ 
+if (idx > -1) {
+const [target] = books.splice(idx, 1);
+books.unshift(target);
+}
+}
+ 
+const colors = [
+"#FFF8D6",
+"#EAF7EA",
+"#EEF5FF",
+"#FFEFF6",
+"#FFF0DB"
+];
+ 
+const list = document.getElementById("book-list");
+ 
+list.innerHTML = "";
+ 
+books.forEach((book, index) => {
+ 
+const color = colors[index % colors.length];
+ 
+const originalIndex =
+allBooks.findIndex(
+b => b.isbn === book.isbn
+);
+ 
 const googleUrl =
 `https://books.google.com/books/content?vid=ISBN${book.isbn}&printsec=frontcover&img=1&zoom=1`;
  
 const openbdUrl =
 `https://cover.openbd.jp/${book.isbn}.jpg`;
-
-        div.innerHTML = `
-            <div style="display:flex; gap:12px;">
+ 
+let displayYomi = book.yomi || "";
+ 
+if (displayYomi.length > 10) {
+displayYomi =
+displayYomi.substring(0, 10) + "...";
+}
+ 
+const div = document.createElement("div");
+ 
+div.className = "book-card";
+ 
+div.style.backgroundColor = color;
+ 
+div.innerHTML = `
+<div style="display:flex; gap:12px;">
+ 
+<div>
+ 
 <img src="${googleUrl}"
 onerror="this.onerror=null;
 this.src='${openbdUrl}';
@@ -142,24 +220,52 @@ this.onerror=function(){
 this.onerror=null;
 this.src='noimage.png';
 };"
-style="width:80px; height:110px; object-fit:cover; border-radius:6px;">
+style="
+width:80px;
+height:110px;
+object-fit:cover;
+border-radius:6px;
+">
+ 
+<div class="book-buttons">
+ 
+<button onclick="editBook(${originalIndex})">
+編集
+</button>
+ 
+<button onclick="BooksManager.confirmDelete(${originalIndex})">
+削除
+</button>
+ 
+</div>
+ 
+</div>
  
 <div style="flex:1;">
-<div class="book-title">${book.title}</div>
-<div class="book-meta">著者：${book.author}</div>
-<div class="book-meta">よみ：${book.yomi}</div>
-<div class="book-meta">ISBN：${book.isbn}</div>
+ 
+<div class="book-title">
+${book.title}
 </div>
+ 
+<div class="book-meta">
+著者：${book.author}
 </div>
-
-            <div class="book-buttons">
-                <button onclick="editBook(${originalIndex})">編集</button>
-                <button onclick="BooksManager.confirmDelete(${originalIndex})">削除</button>
-            </div>
-        `;
-
-        list.appendChild(div);
-    });
+ 
+<div class="book-meta">
+よみ：${displayYomi}
+</div>
+ 
+<div class="book-meta">
+ISBN：${book.isbn}
+</div>
+ 
+</div>
+ 
+</div>
+`;
+ 
+list.appendChild(div);
+});
 };
 
 
@@ -373,12 +479,12 @@ return null;
 function drawTopButtons() {
 
   // ★ 説明文を初期状態に戻す
-  document.getElementById("description").innerHTML = `
+  setDescription(`
   読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
   読み込むバーコードは、本の裏面の２段のバーコードです。<br>
   上手く読み込めない場合は、手動で登録することも可能です。<br>
   よみは「ひらがな」「アルファベット」「数字」のみ入力できます。
-  `;
+  `);
 
   const top = document.getElementById("top-area");
   top.innerHTML = "";
@@ -528,11 +634,11 @@ function saveEdit(index) {
 function showBackupData() {
 
   // ★ 説明文をバックアップ用に変更
-  document.getElementById("description").innerHTML = `
+  setDescription(`
     以下に表示される文字列をコピーして保存しておくことで、
     データが消えた際のバックアップとして利用することができます。<br>
     また、メール等で送ることで、他の端末にデータをコピーすることができます。
-  `;
+  `);
 
   const top = document.getElementById("top-area");
   const backupStr = BooksManager.exportBackupString();
@@ -563,10 +669,10 @@ function copyBackup() {
 function showRestoreTextUI() {
 
   // ★ 説明文を復元用に変更
-  document.getElementById("description").innerHTML = `
+  setDescription(`
     スマホを変えた際や、データが消えた際に、
     バックアップデータを貼り付けることで、データを復元することができます。
-  `;
+  `);
 
   const top = document.getElementById("top-area");
 
