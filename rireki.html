@@ -534,67 +534,111 @@ top.appendChild(h3Backup);
    手動登録フォーム
 ----------------------------------- */
 function showManualEntryForm() {
-  const top = document.getElementById("top-area");
-  top.innerHTML = `
-    <h3>手動登録</h3>
-
-    ISBN：<br>
-    <input id="m-isbn" type="text"><br><br>
-
-    タイトル：<br>
-    <input id="m-title" type="text"><br><br>
-
-    著者：<br>
-    <input id="m-author" type="text"><br><br>
-
-    よみ：<br>
-    <input id="m-yomi" type="text"
-           oninput="this.value = this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g, '');"><br><br>
-
-    <button onclick="manualSave()">登録する</button>
-    <button onclick="drawTopButtons()" style="margin-left:10px;">キャンセル</button>
-  `;
-}
-
-function manualSave() {
-  const info = {
-    isbn: document.getElementById("m-isbn").value || ("temp_" + Date.now()),
-    title: document.getElementById("m-title").value,
-    author: document.getElementById("m-author").value,
-    yomi: document.getElementById("m-yomi").value
-  };
-
-  if (!info.title || !info.yomi) {
-    alert("タイトル・よみは必須です");
-    return;
-  }
-
-  if (BooksManager.isDuplicate(info)) {
-    alert("この本はすでに登録されています");
-    drawTopButtons();
-    return;
-  }
-
-  BooksManager.saveBook(info);
-
-  const group = BooksManager.getGroupFromYomi(info.yomi);
-  BooksManager.renderBookList("yomi", group, info.isbn);
-
-  alert("登録しました");
-  setTimeout(drawTopButtons, 10);
-  document.getElementById("middle-area").innerHTML = "";
+const top =
+document.getElementById("top-area");
+top.innerHTML = `
+<div style="text-align:left;">
+<h3 style="text-align:left;">
+手動登録</h3>
+<div style="margin-bottom:12px;">
+ISBN：
+<input
+id="m-isbn"
+type="text"
+style="font-size:16px; width:70%;">
+</div>
+<div style="margin-bottom:12px;">
+タイトル：
+<input
+id="m-title"
+type="text"
+style="font-size:16px; width:70%;">
+</div>
+<div style="margin-bottom:12px;">
+著者：
+<input
+id="m-author"
+type="text"
+style="font-size:16px; width:70%;">
+</div>
+<div style="margin-bottom:12px;">
+よみ：
+<input
+id="m-yomi"
+type="text"
+style="font-size:16px; width:70%;"
+oninput="this.value=this.value.replace(/[^ぁ-んa-zA-Z0-9ー]/g,'');">
+</div>
+<button onclick="manualSave()">
+登録する
+</button>
+<button
+onclick="drawTopButtons()"
+style="margin-left:10px;">
+キャンセル
+</button>
+</div>
+`;
+window.scrollTo({
+top: 0,
+behavior: "smooth"
+});
 }
 
 /* -----------------------------------
    編集
 ----------------------------------- */
 function editBook(index) {
+ 
+if (!confirm("この本の情報を編集しますか？")) {
+return;
+}
 const books = BooksManager.getBooks();
 const book = books[index];
+const googleUrl =
+`https://books.google.com/books/content?vid=ISBN${book.isbn}&printsec=frontcover&img=1&zoom=1`;
+const openbdUrl =
+`https://cover.openbd.jp/${book.isbn}.jpg`;
 const top =
 document.getElementById("top-area");
 top.innerHTML = `
 <div style="text-align:left;">
+<h3>編集対象</h3>
+<div style="
+background:#fff5cc;
+border:2px solid #e0c860;
+border-radius:10px;
+padding:10px;
+margin-bottom:20px;
+">
+<div style="display:flex; gap:12px;">
+<img src="${googleUrl}"
+onerror="this.onerror=null;
+this.src='${openbdUrl}';
+this.onerror=function(){
+this.onerror=null;
+this.src='noimage.png';
+};"
+style="
+width:80px;
+height:110px;
+object-fit:cover;
+border-radius:6px;
+">
+<div>
+<div><b>${book.title}</b></div>
+<div>
+著者：${book.author}
+</div>
+<div>
+よみ：${book.yomi}
+</div>
+<div>
+ISBN：${book.isbn}
+</div>
+</div>
+</div>
+</div>
 <h3 style="text-align:left;">編集</h3>
 <div style="margin-bottom:12px;">
 ISBN：
@@ -637,17 +681,13 @@ onclick="drawTopButtons()"
 style="margin-left:10px;">
 キャンセル
 </button>
- 
 </div>
 `;
- 
 window.scrollTo({
 top: 0,
 behavior: "smooth"
 });
- 
 }
-
 /* -----------------------------------
    更新処理
 ----------------------------------- */
