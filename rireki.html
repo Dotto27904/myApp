@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート2</title>
+  <title>読書ノート</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -112,21 +112,34 @@ btn.textContent = "説明文を表示";
  
 function setDescription(html) {
 document.getElementById("description").innerHTML = `
-<button id="description-toggle"
+<div style="
+position:absolute;
+top:10px;
+right:10px;
+z-index:1000;
+">
+ 
+<button
+id="description-toggle"
 onclick="toggleDescription()"
 style="
-margin-bottom:8px;
 padding:10px 20px;
 font-size:18px;
-">説明文を表示
+">
+説明文を表示
 </button>
  
-<div id="description-body"
-style="display:none;">
+</div>
+ 
+<div
+id="description-body"
+style="
+display:none;
+margin-top:10px;
+">
 ${html}
 </div>
-`;
- 
+`; 
 descriptionVisible = false;
 }
 let duplicateAlertShown = false;
@@ -491,44 +504,67 @@ function drawTopButtons() {
   const top = document.getElementById("top-area");
   top.innerHTML = "";
 
-  // ▼ 本の登録セクション
-const h3Register = document.createElement("h3");
-h3Register.textContent = "本の登録";
-h3Register.style.textAlign = "left";
-top.appendChild(h3Register);
+// ▼ 本の登録
+const regRow = document.createElement("div");
+regRow.style =
+"display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:15px;";
+ 
+regRow.innerHTML = `
+<span style="
+font-size:1.17em;
+font-weight:bold;
+min-width:90px;
+">
+本の登録
+</span>
+`;
+ 
+const btn1 = document.createElement("button");
+btn1.textContent = "バーコード読み取り";
+btn1.style = "padding:10px 20px; font-size:18px;";
+btn1.onclick = showCamera;
+ 
+const btn2 = document.createElement("button");
+btn2.textContent = "手動登録";
+btn2.style = "padding:10px 20px; font-size:18px;";
+btn2.onclick = showManualEntryForm;
+ 
+regRow.appendChild(btn1);
+regRow.appendChild(btn2);
+ 
+top.appendChild(regRow);
+ 
+// ▼ バックアップ
+const backupRow = document.createElement("div");
+backupRow.style =
+"display:flex;align-items:center;gap:10px;flex-wrap:wrap;";
+ 
+backupRow.innerHTML = `
+<span style="
+font-size:1.17em;
+font-weight:bold;
+min-width:90px;
+">
+バックアップ
+</span>
+`;
+ 
+const btn3 = document.createElement("button");
+btn3.textContent = "作成";
+btn3.style = "padding:10px 20px; font-size:18px;";
+btn3.onclick = showBackupData;
+ 
+const btn4 = document.createElement("button");
+btn4.textContent = "復元";
+btn4.style = "padding:10px 20px; font-size:18px;";
+btn4.onclick = showRestoreTextUI;
+ 
+backupRow.appendChild(btn3);
+backupRow.appendChild(btn4);
+ 
+top.appendChild(backupRow);
 
-  const btn1 = document.createElement("button");
-  btn1.textContent = "バーコード読み取り";
-  btn1.style = "padding:10px 20px; font-size:18px;";
-  btn1.onclick = showCamera;
-
-  const btn2 = document.createElement("button");
-  btn2.textContent = "手動登録";
-  btn2.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
-  btn2.onclick = showManualEntryForm;
-
-  top.appendChild(btn1);
-  top.appendChild(btn2);
-
-  // ▼ バックアップセクション
-const h3Backup = document.createElement("h3");
-h3Backup.textContent = "バックアップ";
-h3Backup.style = "margin-top:25px; text-align:left;";
-top.appendChild(h3Backup);
-
-  const btn3 = document.createElement("button");
-  btn3.textContent = "バックアップ作成";
-  btn3.style = "padding:10px 20px; font-size:18px;";
-  btn3.onclick = showBackupData;
-
-  const btn4 = document.createElement("button");
-  btn4.textContent = "復元";
-  btn4.style = "padding:10px 20px; font-size:18px; margin-left:10px;";
-  btn4.onclick = showRestoreTextUI;
-
-  top.appendChild(btn3);
-  top.appendChild(btn4);
-}
+} // ←追加
 
 /* -----------------------------------
    手動登録フォーム
@@ -750,8 +786,24 @@ function showBackupData() {
   top.innerHTML = `
     <h3>バックアップ（文字列）</h3>
     <textarea id="backup-view" style="width:90%; height:150px;">${backupStr}</textarea><br><br>
-    <button onclick="copyBackup()">コピー</button>
-    <button onclick="drawTopButtons()" style="margin-left:10px;">戻る</button>
+<button
+onclick="copyBackup()"
+style="
+font-size:18px;
+padding:10px 20px;
+">
+コピー
+</button>
+ 
+<button
+onclick="drawTopButtons()"
+style="
+margin-left:10px;
+font-size:18px;
+padding:10px 20px;
+">
+戻る
+</button>
   `;
 }
 
@@ -785,9 +837,24 @@ function showRestoreTextUI() {
 
     バックアップ文字列を貼り付けてください：<br>
     <textarea id="restore-text" style="width:90%; height:120px;"></textarea><br><br>
-
-    <button onclick="restoreBackupFromText()">復元する</button>
-    <button onclick="drawTopButtons()" style="margin-left:10px;">戻る</button>
+<button
+onclick="restoreBackupFromText()"
+style="
+font-size:18px;
+padding:10px 20px;
+">
+復元する
+</button>
+ 
+<button
+onclick="drawTopButtons()"
+style="
+margin-left:10px;
+font-size:18px;
+padding:10px 20px;
+">
+戻る
+</button>
   `;
 }
 
@@ -830,13 +897,13 @@ function showCamera() {
   camDiv.style = "width:100%; max-width:400px; margin:auto;";
   top.appendChild(camDiv);
 
-  const mid = document.getElementById("middle-area");
-  mid.innerHTML = "";
-  const stopBtn = document.createElement("button");
-  stopBtn.textContent = "読み取りを終わる";
-  stopBtn.style = "padding:10px 20px; font-size:18px;";
-  stopBtn.onclick = stopCamera;
-  mid.appendChild(stopBtn);
+const stopBtn = document.createElement("button");
+stopBtn.textContent = "読み取りを終わる";
+stopBtn.style =
+"padding:10px 20px; font-size:18px; margin-top:10px;";
+stopBtn.onclick = stopCamera;
+ 
+top.appendChild(stopBtn);
 
   let lastScanTime = 0;
 
@@ -889,6 +956,7 @@ function showCamera() {
       }
       cameraStopped = true;
       Quagga.stop();
+      document.getElementById("middle-area").innerHTML = "";
       drawTopButtons();
       isProcessing = false;
       return;
@@ -917,17 +985,24 @@ function showCamera() {
 
     cameraStopped = true;
     Quagga.stop();
+    document.getElementById("middle-area").innerHTML = "";    
     drawTopButtons();
     isProcessing = false;
   });
 }
 
 function stopCamera() {
-  cameraStopped = true;
-  Quagga.stop();
-  const cam = document.querySelector('#camera');
-  if (cam) cam.innerHTML = "";
-  drawTopButtons();
+cameraStopped = true;
+try {
+Quagga.stop();
+} catch(e) {}
+const cam = document.querySelector('#camera');
+if (cam) {
+cam.innerHTML = "";
+cam.remove();
+}
+document.getElementById("middle-area").innerHTML = "";
+drawTopButtons();
 }
 
 /* -----------------------------------
