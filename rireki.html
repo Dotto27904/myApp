@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>読書ノート</title>
+  <title>読書ノート2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -51,12 +51,12 @@ padding: 6px;
   </button>
 </div>
 
-<h2>読書ノート</h2>
+<h2 style="margin-bottom:5px;">読書ノート</h2>
 
 <div id="description"></div>
 
 <!-- 上段：ボタン -->
-<div id="top-area" style="margin:20px; text-align:center;"></div>
+<div id="top-area" style="margin:0 20px 20px 20px; text-align:center;"></div>
 
 <h3>　タイトル別</h3>
 
@@ -273,8 +273,6 @@ onclick="BooksManager.confirmDelete(${originalIndex})">
 </button>
  
 </div>
-
-
 
 `;
  
@@ -496,7 +494,8 @@ function drawTopButtons() {
   setDescription(`
   読み取りボタンを押して、カメラで本のバーコードを読み込んでください。<br>
   読み込むバーコードは、本の裏面の２段のバーコードです。<br>
-  上手く読み込めない場合は、手動で登録することも可能です。<br>
+  上手く読み込めない場合は、再度読み込むか、手動で登録することも可能です。<br>
+  ISBNには、「978」で始まるバーコード番号を入力してください。<br>
   よみは「ひらがな」「アルファベット」「数字」「記号」のみ入力できます。<br>
   また、見づらくなるのを避けるため、よみの8文字目以降は非表示にしてあります<br>
   `);
