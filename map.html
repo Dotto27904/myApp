@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>図書館案内アプリ</title>
-
     <!-- CSS -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-
   <!-- 戻るボタン（ページ上部） -->
   <div style="text-align:left; margin:10px;">
     <button onclick="location.href='index.html'"
@@ -18,46 +16,123 @@
       ← 戻る
     </button>
   </div>
-
-　<h2>館内地図</h2>
-  お探しの本のジャンルに最も近いボタンを押してください。
+　<h2 style="margin-top:0px;">館内地図</h2>
+  お探しの本のジャンルに最も近いジャンルを選んでください。ジャンルを選択すると場所を表示します。
 
 　<div id="buttons">
-      <button onclick="highlight('zassi.png', '雑誌')">雑誌</button>
 
-      <button onclick="highlight('ryokou.png', '旅行')">旅行</button>
-      <button onclick="highlight('kennkou.png', '健康')">健康</button>
-      <button onclick="highlight('enngei.png', '園芸')">園芸</button>
-      <button onclick="highlight('bunnka.png', '文化')">文化</button>
+<h3>ジャンル選択</h3>
+ 
+<select id="genreSelect"
+style="width:95%; padding:12px; font-size:18px;"
+onchange="changeGenre()">
+ 
+<option value="">選択してください</option>
 
-      <button onclick="highlight('ryouri.png', '料理')">料理</button>
-      <button onclick="highlight('fassyonn.png', 'ファッション')">ファッション</button>
-      <button onclick="highlight('kosodate.png', '家事・育児')">家事・育児</button>
+<option value="zassi.png|雑誌">
+【 雑 誌 】　週刊誌・情報誌
+</option>
 
-      <button onclick="highlight('zidou.png', '児童書・絵本')">児童書・絵本</button>
+<option value="ryokou.png|旅行">
+【 生活情報 】　旅行ガイド
+</option>
 
-      <button onclick="highlight('YA.png', '中高生向けの本')">中高生向けの本</button>
-      <button onclick="highlight('YA.png', 'ライトノベル')">ライトノベル</button>
+<option value="kennkou.png|健康">
+【 生活情報 】　健康・病気・ダイエット
+</option>
 
-      <button onclick="highlight('bizinesu.png', 'パソコン')">パソコン</button>
-      <button onclick="highlight('bizinesu.png', '政治・経済')">政治・経済</button>
-      <button onclick="highlight('bizinesu.png', 'お金')">お金</button>
+<option value="enngei.png|園芸">
+【 生活情報 】　園芸・ガーデニング・家庭菜園
+</option>
 
-      <button onclick="highlight('bunnko.png', '文庫（ライトノベル以外）')">文庫（ライトノベル以外）</button>
+<option value="bunnka.png|文化">
+【 生活情報 】　華道・茶道・囲碁・将棋
+</option>
 
-      <button onclick="highlight('sinnri.png', '哲学・心理学・占い')">哲学・心理学・占い</button>
-      <button onclick="highlight('rekisi.png', '歴史・伝記')">歴史・伝記</button>
-      <button onclick="highlight('hukusi.png', '福祉')">福祉</button>
-      <button onclick="highlight('kagaku.png', '社会・科学')">社会・科学</button>
-      <button onclick="highlight('gizyutu.png', '技術・産業')">技術・産業</button>
-      <button onclick="highlight('geizyutu.png', '芸術')">芸術</button>
-      <button onclick="highlight('supotu.png', 'スポーツ')">スポーツ</button>
-      <button onclick="highlight('bunngaku.png', '文学')">文学</button>
+<option value="ryouri.png|料理">
+【 家族応援 】　料理・レシピ本
+</option>
+
+<option value="fassyonn.png|ファッション">
+【 家族応援 】　裁縫・服飾・美容
+</option>
+
+<option value="kosodate.png|家事・育児">
+【 家族応援 】　家事・育児
+</option>
+
+<option value="zidou.png|児童書">
+【 児童室 】　児童書・絵本・紙芝居
+</option>
+
+<option value="YA.png|YA">
+【 ＹＡコーナー 】　進路・ライトノベル
+</option>
+
+<option value="bizinesu.png|パソコン">
+【 ビジネス 】パソコン・政治経済・お金
+</option>
+
+<option value="bunnko.png|小説">
+【 一 般 】　小説・文庫本
+</option>
+
+<option value="sinnri.png|哲学・心理学・占い">
+【 一 般 】　哲学・心理学・占い
+</option>
+ 
+<option value="rekisi.png|歴史・伝記">
+【 一 般 】　歴史・伝記
+</option>
+
+<option value="hukusi.png|福祉">
+【 一 般 】　年金・相続・社会問題
+</option>
+
+<option value="kagaku.png|社会・科学">
+【 一 般 】　社会・科学
+</option>
+ 
+<option value="gizyutu.png|技術・産業">
+【 一 般 】　技術・産業
+</option>
+ 
+<option value="geizyutu.png|芸術">
+【 一 般 】　芸術
+</option>
+ 
+<option value="supotu.png|スポーツ">
+【 一 般 】　スポーツ
+</option>
+ 
+<option value="bunngaku.png|文学">
+【 一 般 】　文学・小説
+</option>
+</select>
+
+<script>
+ 
+function changeGenre(){
+ 
+const select =
+document.getElementById("genreSelect");
+ 
+if(!select.value) return;
+ 
+const data = select.value.split("|");
+ 
+highlight(
+data[0],
+data[1]
+);
+}
+ 
+</script>
 
     </div>
 
    <!-- 排架場所表示 -->
-   <h2>場所</h2>
+
     <div id="message" style="margin: 15px; font-size: 18px; font-weight: bold;"></div>
 
 　  <!-- 地図表示 -->
