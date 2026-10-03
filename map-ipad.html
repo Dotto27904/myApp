@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>図書館案内アプリ</title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+　<h2 style="margin-top:0px;">館内地図</h2>
+  お探しの本の分野を選んでください。本の場所をご案内します。
+
+　<div id="buttons">
+
+<div id="genre-area">
+
+<h3>本の分野を選択</h3>
+ 
+<select id="genreSelect"
+style="width:100%; padding:12px; font-size:18px;"
+onchange="changeGenre()">
+ 
+<option value="">選択してください</option>
+
+<option value="zassi.png|雑誌">
+【 雑 誌 】　週刊誌・情報誌
+</option>
+
+<option value="ryokou.png|旅行">
+【 生活情報 】　旅行ガイド
+</option>
+
+<option value="kennkou.png|健康">
+【 生活情報 】　健康・病気・ダイエット
+</option>
+
+<option value="enngei.png|園芸">
+【 生活情報 】　園芸・ガーデニング・家庭菜園
+</option>
+
+<option value="bunnka.png|文化">
+【 生活情報 】　華道・茶道・囲碁・将棋
+</option>
+
+<option value="ryouri.png|料理">
+【 家族応援 】　料理・レシピ本
+</option>
+
+<option value="fassyonn.png|ファッション">
+【 家族応援 】　裁縫・服飾・美容
+</option>
+
+<option value="kosodate.png|家事・育児">
+【 家族応援 】　家事・育児
+</option>
+
+<option value="zidou.png|児童書">
+【 児童室 】　児童書・絵本・紙芝居
+</option>
+
+<option value="YA.png|YA">
+【 ＹＡコーナー 】　進路・ライトノベル
+</option>
+
+<option value="bizinesu.png|パソコン">
+【 ビジネス 】パソコン・政治経済・お金
+</option>
+
+<option value="bunnko.png|小説">
+【 一 般 】　小説・文庫本
+</option>
+
+<option value="sinnri.png|哲学・心理学・占い">
+【 一 般 】　哲学・心理学・占い
+</option>
+ 
+<option value="rekisi.png|歴史・伝記">
+【 一 般 】　歴史・伝記
+</option>
+
+<option value="hukusi.png|福祉">
+【 一 般 】　年金・相続・社会問題
+</option>
+
+<option value="kagaku.png|社会・科学">
+【 一 般 】　社会・科学
+</option>
+ 
+<option value="gizyutu.png|技術・産業">
+【 一 般 】　技術・産業
+</option>
+ 
+<option value="geizyutu.png|芸術">
+【 一 般 】　芸術
+</option>
+ 
+<option value="supotu.png|スポーツ">
+【 一 般 】　スポーツ
+</option>
+ 
+<option value="bunngaku.png|文学">
+【 一 般 】　文学・小説
+</option>
+</select>
+
+</div>
+ 
+<div id="qr-area">
+ 
+<div class="qr-title">
+📱 この地図を<br>
+スマホで見る
+</div>
+ 
+<div id="qrcode"></div>
+ 
+</div>
+ 
+</div>
+
+<script>
+ 
+function changeGenre(){
+ 
+const select =
+document.getElementById("genreSelect");
+ 
+if(!select.value) return;
+ 
+const data = select.value.split("|");
+ 
+highlight(
+data[0],
+data[1]
+);
+}
+ 
+</script>
+
+    </div>
+
+   <!-- 排架場所表示 -->
+
+    <div id="message" style="margin: 15px; font-size: 18px; font-weight: bold;"></div>
+
+<!-- 地図表示 -->
+<div id="map-container">
+map_1F.png
+<img id="highlight" src="" alt="ハイライト" class="hidden">
+</div>
+ 
+<!-- QRコードライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+ 
+<!-- 自分のJS -->
+<script src
+
+</body>
+</html>

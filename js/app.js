@@ -142,3 +142,16 @@ break;
 }
 }
 }
+
+window.addEventListener("load", function(){
+ 
+new QRCode(
+document.getElementById("qrcode"),
+{
+text: "https://dotto27904.github.io/myApp/map-mobile.html?area=travel",
+width: 150,
+height: 150
+}
+);
+ 
+});
