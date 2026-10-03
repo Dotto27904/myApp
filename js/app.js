@@ -90,3 +90,55 @@ const genreMessage = {
     "スポーツ": "スポーツの本は 2階・一般書（棚番号７）にあります。",
     "文学": "文学の本は 2階・一般（棚番号８以降）にあります。",
 };
+// URLパラメータ対応
+const params = new URLSearchParams(window.location.search);
+const area = params.get("area");
+ 
+if(area){
+ 
+const areaMap = {
+magazine: ["zassi.png", "雑誌"],
+travel: ["ryokou.png", "旅行"],
+health: ["kennkou.png", "健康"],
+gardening: ["enngei.png", "園芸"],
+culture: ["bunnka.png", "文化"],
+cooking: ["ryouri.png", "料理"],
+fashion: ["fassyonn.png", "ファッション"],
+family: ["kosodate.png", "家事・育児"],
+children: ["zidou.png", "児童書"],
+ya: ["YA.png", "YA"],
+business: ["bizinesu.png", "パソコン"],
+novel: ["bunnko.png", "小説"],
+psychology: ["sinnri.png", "哲学・心理学・占い"],
+history: ["rekisi.png", "歴史・伝記"],
+welfare: ["hukusi.png", "福祉"],
+science: ["kagaku.png", "社会・科学"],
+technology: ["gizyutu.png", "技術・産業"],
+art: ["geizyutu.png", "芸術"],
+sports: ["supotu.png", "スポーツ"],
+literature: ["bunngaku.png", "文学"]
+};
+ 
+if(areaMap[area]){
+ 
+const fileName = areaMap[area][0];
+const label = areaMap[area][1];
+ 
+highlight(fileName, label);
+ 
+// プルダウンも合わせる
+const select = document.getElementById("genreSelect");
+ 
+if(select){
+for(let option of select.options){
+ 
+const data = option.value.split("|");
+ 
+if(data.length > 1 && data[1] === label){
+option.selected = true;
+break;
+}
+}
+}
+}
+}
