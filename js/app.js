@@ -205,7 +205,7 @@ updateQRCode("雑誌");
 
 // ==========================
 // map-ipad.html の時だけ
-// 1分無操作でTOPへ戻る
+// 1分無操作でipad-top.htmlへ戻る
 // ==========================
  
 if (window.location.pathname.includes("map-ipad.html")) {
@@ -218,7 +218,7 @@ clearTimeout(inactivityTimer);
  
 inactivityTimer = setTimeout(function () {
  
-location.href = "index.html";
+location.href = "ipad-top.html";
  
 }, 10000);
  
