@@ -143,15 +143,62 @@ break;
 }
 }
 
-window.addEventListener("load", function(){
+// QR用ID対応表
+const areaIdMap = {
+"雑誌": "magazine",
+"旅行": "travel",
+"健康": "health",
+"園芸": "gardening",
+"文化": "culture",
+"料理": "cooking",
+"ファッション": "fashion",
+"家事・育児": "family",
+"児童書": "children",
+"YA": "ya",
+"パソコン": "business",
+"小説": "novel",
+"哲学・心理学・占い": "psychology",
+"歴史・伝記": "history",
+"福祉": "welfare",
+"社会・科学": "science",
+"技術・産業": "technology",
+"芸術": "art",
+"スポーツ": "sports",
+"文学": "literature"
+};
  
-new QRCode(
-document.getElementById("qrcode"),
-{
-text: "https://dotto27904.github.io/myApp/map-mobile.html?area=travel",
+// QR更新
+function updateQRCode(label){
+ 
+const areaId = areaIdMap[label];
+ 
+if(!areaId) return;
+ 
+const qrArea =
+document.getElementById("qrcode");
+ 
+if(!qrArea) return;
+ 
+qrArea.innerHTML = "";
+ 
+new QRCode(qrArea, {
+text:
+"https://dotto27904.github.io/myApp/map-mobile.html?area="
++ areaId,
 width: 150,
 height: 150
+});
 }
-);
+ 
+ 
+// iPad版：初回表示時
+window.addEventListener("load", function(){
+ 
+const qrArea =
+document.getElementById("qrcode");
+ 
+if(qrArea){
+updateQRCode("雑誌");
+}
  
 });
