@@ -202,3 +202,44 @@ updateQRCode("雑誌");
 }
  
 });
+
+// ==========================
+// map-ipad.html の時だけ
+// 1分無操作でTOPへ戻る
+// ==========================
+ 
+if (window.location.pathname.includes("map-ipad.html")) {
+ 
+let inactivityTimer;
+ 
+function resetInactivityTimer() {
+ 
+clearTimeout(inactivityTimer);
+ 
+inactivityTimer = setTimeout(function () {
+ 
+location.href = "index.html";
+ 
+}, 10000);
+ 
+}
+ 
+// 最初に開始
+resetInactivityTimer();
+ 
+[
+"click",
+"touchstart",
+"mousemove",
+"keydown",
+"scroll"
+].forEach(function(eventName) {
+ 
+document.addEventListener(
+eventName,
+resetInactivityTimer
+);
+ 
+});
+ 
+}
