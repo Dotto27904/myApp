@@ -1,25 +1,116 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
+ 
 <head>
 <meta charset="UTF-8">
-<h2>どんな分野の本をお探しですか？</h2>
-<h2>本の場所をご案内します</h2>
-
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+ 
+<title>図書館案内アプリ</title>
+ 
 <style>
-html, body {
-    width: 100%;
-    height: 100%;
-    margin: 0;
+ 
+html,
+body{
+width:100%;
+height:100%;
+margin:0;
+padding:0;
 }
+ 
+body{
+ 
+background-image:url("ipad-top.jpg");
+ 
+background-size:cover;
+background-position:center center;
+background-repeat:no-repeat;
+ 
+overflow:hidden;
+cursor:pointer;
+}
+ 
+/* 白い半透明シート */
+#overlay{
+ 
+position:fixed;
+ 
+top:0;
+left:0;
+ 
+width:100vw;
+height:100vh;
+ 
+background:rgba(255,255,255,0.8);
+ 
+display:flex;
+justify-content:center;
+align-items:center;
+ 
+text-align:center;
+}
+ 
+#main-message{
+ 
+font-size:100px;
+font-weight:bold;
+color:#333;
+ 
+text-shadow:
+-1px -1px 0 #fff,
+1px -1px 0 #fff,
+-1px 1px 0 #fff,
+1px 1px 0 #fff;
+}
+ 
+#sub-message{
+ 
+margin-top:40px;
+ 
+font-size:50px;
+color:#333;
+ 
+text-shadow:
+-1px -1px 0 #fff,
+1px -1px 0 #fff,
+-1px 1px 0 #fff,
+1px 1px 0 #fff;
+}
+ 
 </style>
+ 
 </head>
+ 
 <body>
-
+ 
+<div id="overlay">
+ 
+<div>
+ 
+<div id="main-message">
+どんな分野の本をお探しですか？<br><br>
+本の場所をご案内します
+</div>
+ 
+<div id="sub-message">
+画面を軽くタッチしてください
+</div>
+ 
+</div>
+ 
+</div>
+ 
 <script>
-document.body.addEventListener("click", function() {
-    location.href = "https://dotto27904.github.io/myApp/map-ipad.html";
-});
+ 
+document.addEventListener(
+"click",
+function(){
+location.href="map-ipad.html";
+}
+);
+ 
 </script>
-
+ 
 </body>
+ 
 </html>

@@ -198,7 +198,7 @@ const qrArea =
 document.getElementById("qrcode");
  
 if(qrArea){
-updateQRCode("雑誌");
+window.addEventListener("load", function(){});
 }
  
 });
