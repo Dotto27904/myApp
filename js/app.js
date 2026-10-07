@@ -185,8 +185,8 @@ new QRCode(qrArea, {
 text:
 "https://dotto27904.github.io/myApp/map-mobile.html?area="
 + areaId,
-width: 150,
-height: 150
+width: 120,
+height: 120
 });
 }
  

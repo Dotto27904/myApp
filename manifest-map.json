@@ -1,0 +1,8 @@
+{
+"name": "図書館案内アプリ",
+"short_name": "図書館案内",
+"start_url": "./ipad-top.html",
+"display": "standalone",
+"background_color": "#ffffff",
+"theme_color": "#ffffff"
+}

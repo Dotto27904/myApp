@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest-map.json">
     <title>図書館案内アプリ</title>
     <!-- CSS -->
     <link rel="stylesheet" href="css/style.css">
@@ -13,20 +14,11 @@
 <div id="top-container">
  
 <div id="left-container">
- 
-<h2 style="margin-top:0px;">
-館内地図
-</h2>
- 
-<p>
-お探しの本の分野を選んでください。
-本の場所をご案内します。
-</p>
- 
-<h3>本の分野を選択</h3>
- 
+
+<h3>お探しの本の分野を選択してください</h3>
+
 <select id="genreSelect"
-style="width:60%; padding:12px; font-size:18px;"
+style="width:80%; padding:12px; font-size:18px;"
 onchange="changeGenre()">
  
 <option value="">選択してください</option>
@@ -112,14 +104,18 @@ onchange="changeGenre()">
 </option>
  
 </select>
- 
+
+<!-- 排架場所表示 -->
+<div id="message"
+style="margin:15px; font-size:18px; font-weight:bold;">
+</div>
+
 </div>
  
 <div id="right-container">
  
 <div class="qr-title">
-📱 この地図を<br>
-スマホで見る
+この地図をスマホで見る
 </div>
  
 <div id="qrcode"></div>
@@ -151,11 +147,6 @@ data[1]
 }
  
 </script>
-
-<!-- 排架場所表示 -->
-<div id="message"
-style="margin:15px; font-size:18px; font-weight:bold;">
-</div>
  
 <!-- 地図表示 -->
 <div id="map-container">

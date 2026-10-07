@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest-map.json">
     <title>図書館案内アプリ</title>
     <!-- CSS -->
     <link rel="stylesheet" href="css/style.css">
@@ -123,19 +124,22 @@ data[1]
  
 </script>
 
-    </div>
-
-   <!-- 排架場所表示 -->
-
-    <div id="message" style="margin: 15px; font-size: 18px; font-weight: bold;"></div>
-
-　  <!-- 地図表示 -->
-    <div id="map-container">
-        <img id="map" src="map_1F.png" alt="地図">
-        <img id="highlight" src="" alt="ハイライト" class="hidden">
-    </div>
-
-    <script src="js/app.js"></script>
-
+<!-- 排架場所表示 -->
+<div id="message"
+style="margin:15px; font-size:18px; font-weight:bold;">
+</div>
+ 
+<!-- 地図表示 -->
+<div id="map-container">
+<img id="map" src="map_1F.png" alt="地図">
+<img id="highlight" src="" alt="ハイライト" class="hidden">
+</div>
+ 
+<!-- QRコードライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+ 
+<!-- 自分のJS -->
+<script src="js/app.js"></script>
+ 
 </body>
 </html>
