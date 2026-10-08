@@ -6,13 +6,32 @@
 <link rel="manifest" href="manifest-map.json">
 <title>iPadトップ画面</title>
 <style>
-    /* 画像を横幅いっぱいに表示 */
-    .full-width-img {
-        width: 100%;       /* 横幅100% */
-        height: auto;      /* アスペクト比を維持 */
-        display: block;    /* 余計な隙間をなくす */
-        border: none;      /* 枠線なし */
-    }
+html,
+body{
+    width:100%;
+    height:100%;
+    margin:0;
+    padding:0;
+}
+
+body{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    cursor:pointer;
+    background:white;
+}
+
+.full-width-img{
+    max-width:95vw;
+    max-height:95vh;
+
+    width:auto;
+    height:auto;
+
+    display:block;
+    border:none;
+}
 
     /* クリック時の視覚効果（任意） */
     .full-width-img:hover {
@@ -22,12 +41,13 @@
     }
 </style>
 </head>
-<body>
 
-<!-- 画像をクリックで指定HTMLへ遷移 -->
-<a href="map-ipad.html">
-    <img src="ipad-top.jpg" alt="マップ" class="full-width-img">
-</a>
+<body onclick="location.href='map-ipad.html'">
+
+<img
+    src="ipad-top.jpg"
+    alt="マップ"
+    class="full-width-img">
 
 </body>
 </html>
