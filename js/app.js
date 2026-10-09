@@ -213,7 +213,7 @@ window.addEventListener("load", function(){});
 
 // ==========================
 // map-ipad.html の時だけ
-// 1分無操作でipad-top.htmlへ戻る
+// 30秒無操作でipad-top.htmlへ戻る
 // ==========================
  
 if (window.location.pathname.includes("map-ipad.html")) {
@@ -228,7 +228,7 @@ inactivityTimer = setTimeout(function () {
  
 location.href = "ipad-top.html";
  
-}, 10000);
+}, 30000);
  
 }
  
